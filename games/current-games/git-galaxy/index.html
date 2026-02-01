@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Git Galaxy - Learn Git Through Space</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #0a0a1a;
+            color: #fff;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Starfield background */
+        .starfield {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        .star {
+            position: absolute;
+            background: #fff;
+            border-radius: 50%;
+            animation: twinkle 2s infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+
+        /* Main layout */
+        .game-container {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            grid-template-columns: 280px 1fr 280px;
+            grid-template-rows: auto 1fr auto;
+            height: 100vh;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        /* Header */
+        .header {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background: rgba(20, 20, 40, 0.8);
+            border-radius: 12px;
+            border: 1px solid rgba(100, 100, 255, 0.2);
+        }
+
+        .game-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #00d4ff, #7b2fff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .level-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .level-badge {
+            background: linear-gradient(135deg, #7b2fff, #00d4ff);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+
+        .objective {
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+
+        .objective span {
+            color: #00d4ff;
+            font-weight: bold;
+        }
+
+        /* Left panel - Ship & Staging */
+        .ship-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .panel {
+            background: rgba(20, 20, 40, 0.8);
+            border-radius: 12px;
+            border: 1px solid rgba(100, 100, 255, 0.2);
+            padding: 15px;
+        }
+
+        .panel-title {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #888;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .panel-title::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: #00d4ff;
+            border-radius: 50%;
+        }
+
+        /* Ship visualization */
+        .ship-display {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .ship-icon {
+            font-size: 4rem;
+            filter: drop-shadow(0 0 20px rgba(0, 212, 255, 0.5));
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .ship-name {
+            margin-top: 10px;
+            font-weight: bold;
+            color: #00d4ff;
+        }
+
+        /* Staging area (cargo hold) */
+        .staging-area {
+            min-height: 150px;
+            background: rgba(0, 50, 80, 0.3);
+            border: 2px dashed rgba(0, 212, 255, 0.3);
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-content: flex-start;
+            transition: all 0.3s;
+        }
+
+        .staging-area.drag-over {
+            border-color: #00d4ff;
+            background: rgba(0, 100, 150, 0.3);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+        }
+
+        .staging-area.empty::after {
+            content: 'Drag changes here to stage them';
+            color: #555;
+            font-size: 0.85rem;
+            width: 100%;
+            text-align: center;
+            padding: 40px 10px;
+        }
+
+        .staged-file {
+            background: linear-gradient(135deg, #00d4ff, #0088aa);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            animation: stageIn 0.3s ease-out;
+        }
+
+        @keyframes stageIn {
+            from { transform: scale(0); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .staged-file:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+        }
+
+        .staged-file .remove {
+            opacity: 0.7;
+            font-weight: bold;
+        }
+
+        .staged-file:hover .remove {
+            opacity: 1;
+        }
+
+        /* Commit controls */
+        .commit-section {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .commit-message {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid rgba(100, 100, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            color: #fff;
+            font-size: 0.9rem;
+            resize: none;
+        }
+
+        .commit-message:focus {
+            outline: none;
+            border-color: #00d4ff;
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
+        }
+
+        .commit-message::placeholder {
+            color: #555;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-commit {
+            background: linear-gradient(135deg, #00d4ff, #0088aa);
+            color: #000;
+        }
+
+        .btn-commit:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 212, 255, 0.4);
+        }
+
+        .btn-commit:disabled {
+            background: #333;
+            color: #666;
+            cursor: not-allowed;
+        }
+
+        .btn-push {
+            background: linear-gradient(135deg, #7b2fff, #5500cc);
+            color: #fff;
+        }
+
+        .btn-push:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(123, 47, 255, 0.4);
+        }
+
+        .btn-push:disabled {
+            background: #333;
+            color: #666;
+            cursor: not-allowed;
+        }
+
+        /* Center - Space with floating changes */
+        .space-area {
+            position: relative;
+            background: radial-gradient(ellipse at center, rgba(20, 20, 60, 0.5) 0%, transparent 70%);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .floating-change {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 200, 50, 0.1);
+            border: 2px solid rgba(255, 200, 50, 0.5);
+            border-radius: 12px;
+            cursor: grab;
+            transition: all 0.2s;
+            animation: drift 4s ease-in-out infinite;
+        }
+
+        .floating-change:hover {
+            transform: scale(1.1);
+            border-color: #ffc832;
+            box-shadow: 0 0 30px rgba(255, 200, 50, 0.4);
+        }
+
+        .floating-change.dragging {
+            cursor: grabbing;
+            opacity: 0.5;
+            transform: scale(1.2);
+        }
+
+        @keyframes drift {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(5px, -10px) rotate(2deg); }
+            50% { transform: translate(-5px, 5px) rotate(-1deg); }
+            75% { transform: translate(10px, 10px) rotate(1deg); }
+        }
+
+        .floating-change .icon {
+            font-size: 1.8rem;
+        }
+
+        .floating-change .filename {
+            font-size: 0.7rem;
+            margin-top: 4px;
+            color: #ffc832;
+            text-align: center;
+            word-break: break-all;
+            padding: 0 4px;
+        }
+
+        /* File type colors */
+        .floating-change.html { border-color: #e44d26; background: rgba(228, 77, 38, 0.1); }
+        .floating-change.html .filename { color: #e44d26; }
+        .floating-change.css { border-color: #264de4; background: rgba(38, 77, 228, 0.1); }
+        .floating-change.css .filename { color: #264de4; }
+        .floating-change.js { border-color: #f7df1e; background: rgba(247, 223, 30, 0.1); }
+        .floating-change.js .filename { color: #f7df1e; }
+
+        /* Right panel - Timeline & Remote */
+        .timeline-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* Timeline visualization */
+        .timeline {
+            flex: 1;
+            position: relative;
+            padding: 20px 10px;
+            overflow-y: auto;
+        }
+
+        .timeline-line {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: linear-gradient(to bottom, #7b2fff, #00d4ff);
+            transform: translateX(-50%);
+        }
+
+        .commit-node {
+            position: relative;
+            margin: 20px 0;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+            border: 1px solid rgba(100, 100, 255, 0.3);
+            animation: nodeAppear 0.5s ease-out;
+        }
+
+        @keyframes nodeAppear {
+            from { transform: scale(0); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .commit-node::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: -10px;
+            width: 16px;
+            height: 16px;
+            background: #00d4ff;
+            border-radius: 50%;
+            transform: translateX(-50%);
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+        }
+
+        .commit-node.pushed::before {
+            background: #7b2fff;
+            box-shadow: 0 0 10px rgba(123, 47, 255, 0.5);
+        }
+
+        .commit-hash {
+            font-family: monospace;
+            font-size: 0.7rem;
+            color: #666;
+        }
+
+        .commit-msg {
+            font-size: 0.85rem;
+            margin-top: 4px;
+            color: #fff;
+        }
+
+        .commit-files {
+            font-size: 0.7rem;
+            color: #00d4ff;
+            margin-top: 4px;
+        }
+
+        .commit-status {
+            font-size: 0.65rem;
+            margin-top: 4px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        .commit-status.local {
+            background: rgba(0, 212, 255, 0.2);
+            color: #00d4ff;
+        }
+
+        .commit-status.pushed {
+            background: rgba(123, 47, 255, 0.2);
+            color: #7b2fff;
+        }
+
+        /* Remote station */
+        .remote-display {
+            text-align: center;
+            padding: 15px;
+        }
+
+        .remote-icon {
+            font-size: 3rem;
+            filter: drop-shadow(0 0 20px rgba(123, 47, 255, 0.5));
+        }
+
+        .remote-name {
+            margin-top: 8px;
+            color: #7b2fff;
+            font-weight: bold;
+        }
+
+        .remote-status {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        .commits-ahead {
+            color: #00d4ff;
+            font-weight: bold;
+        }
+
+        /* Footer */
+        .footer {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            padding: 15px;
+            background: rgba(20, 20, 40, 0.8);
+            border-radius: 12px;
+            border: 1px solid rgba(100, 100, 255, 0.2);
+        }
+
+        .help-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: #888;
+        }
+
+        .help-key {
+            background: rgba(100, 100, 255, 0.2);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            color: #00d4ff;
+        }
+
+        /* Level complete modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: linear-gradient(135deg, #1a1a3a, #0a0a1a);
+            border: 2px solid rgba(100, 100, 255, 0.3);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            max-width: 500px;
+            animation: modalIn 0.5s ease-out;
+        }
+
+        @keyframes modalIn {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .modal h2 {
+            font-size: 2rem;
+            background: linear-gradient(135deg, #00d4ff, #7b2fff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
+        }
+
+        .modal p {
+            color: #aaa;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .modal .celebration {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+
+        .git-tip {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .git-tip-title {
+            color: #00d4ff;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .git-tip code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            color: #ffc832;
+        }
+
+        /* Tutorial overlay */
+        .tutorial-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .tutorial-overlay.active {
+            display: flex;
+        }
+
+        .tutorial-card {
+            background: linear-gradient(135deg, #1a1a3a, #0a0a1a);
+            border: 2px solid rgba(100, 100, 255, 0.3);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            animation: modalIn 0.5s ease-out;
+        }
+
+        .tutorial-card h2 {
+            font-size: 1.8rem;
+            color: #00d4ff;
+            margin-bottom: 20px;
+        }
+
+        .tutorial-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+        }
+
+        .tutorial-step-num {
+            background: linear-gradient(135deg, #00d4ff, #7b2fff);
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .tutorial-step-content h3 {
+            color: #fff;
+            margin-bottom: 5px;
+        }
+
+        .tutorial-step-content p {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .btn-start {
+            margin-top: 20px;
+            background: linear-gradient(135deg, #00d4ff, #7b2fff);
+            color: #000;
+            font-size: 1.1rem;
+            padding: 15px 40px;
+        }
+
+        /* Notification toast */
+        .toast {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(20, 20, 40, 0.95);
+            border: 1px solid rgba(100, 100, 255, 0.3);
+            border-radius: 10px;
+            padding: 15px 25px;
+            z-index: 50;
+            opacity: 0;
+            transition: all 0.3s;
+        }
+
+        .toast.active {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success {
+            border-color: #00d4ff;
+        }
+
+        .toast.error {
+            border-color: #ff4444;
+        }
+
+        /* Push animation */
+        .push-animation {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 50;
+            display: none;
+        }
+
+        .push-animation.active {
+            display: block;
+        }
+
+        .push-pod {
+            font-size: 3rem;
+            animation: pushFly 1.5s ease-in forwards;
+        }
+
+        @keyframes pushFly {
+            0% { transform: translateX(-200px) scale(1); opacity: 1; }
+            100% { transform: translateX(200px) scale(0.3); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Starfield -->
+    <div class="starfield" id="starfield"></div>
+
+    <!-- Tutorial overlay -->
+    <div class="tutorial-overlay active" id="tutorial">
+        <div class="tutorial-card">
+            <h2>🚀 Welcome to Git Galaxy!</h2>
+            <p style="color: #aaa; margin-bottom: 20px;">Learn Git by exploring space. Here's how it works:</p>
+
+            <div class="tutorial-step">
+                <div class="tutorial-step-num">1</div>
+                <div class="tutorial-step-content">
+                    <h3>🔍 Detect Changes</h3>
+                    <p>When you edit files, they appear as floating cargo in space. These are your <strong style="color: #ffc832;">unstaged changes</strong>.</p>
+                </div>
+            </div>
+
+            <div class="tutorial-step">
+                <div class="tutorial-step-num">2</div>
+                <div class="tutorial-step-content">
+                    <h3>📦 Stage Changes</h3>
+                    <p>Drag changes to your cargo hold to <strong style="color: #00d4ff;">stage</strong> them. This tells Git: "include these in my next commit."</p>
+                </div>
+            </div>
+
+            <div class="tutorial-step">
+                <div class="tutorial-step-num">3</div>
+                <div class="tutorial-step-content">
+                    <h3>💾 Commit</h3>
+                    <p>Write a message describing your changes, then <strong style="color: #00d4ff;">commit</strong>. This creates a snapshot in your timeline.</p>
+                </div>
+            </div>
+
+            <div class="tutorial-step">
+                <div class="tutorial-step-num">4</div>
+                <div class="tutorial-step-content">
+                    <h3>🚀 Push</h3>
+                    <p><strong style="color: #7b2fff;">Push</strong> sends your commits to the remote station (GitHub). That's when your site updates!</p>
+                </div>
+            </div>
+
+            <button class="btn btn-start" onclick="startGame()">Let's Go!</button>
+        </div>
+    </div>
+
+    <!-- Level complete modal -->
+    <div class="modal-overlay" id="levelComplete">
+        <div class="modal">
+            <div class="celebration">🎉</div>
+            <h2>Level Complete!</h2>
+            <p>You've mastered the basics of Git commits and pushing to remote!</p>
+
+            <div class="git-tip">
+                <div class="git-tip-title">💡 Real Git Commands</div>
+                <p style="color: #aaa; font-size: 0.9rem;">
+                    What you just did in the game is exactly what happens when you use VS Code:<br><br>
+                    <code>git add .</code> — Stage your changes<br>
+                    <code>git commit -m "message"</code> — Create a commit<br>
+                    <code>git push</code> — Send to GitHub
+                </p>
+            </div>
+
+            <button class="btn btn-commit" onclick="restartLevel()">Play Again</button>
+        </div>
+    </div>
+
+    <!-- Toast notification -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Push animation -->
+    <div class="push-animation" id="pushAnimation">
+        <div class="push-pod">📦</div>
+    </div>
+
+    <!-- Main game -->
+    <div class="game-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="game-title">🌌 Git Galaxy</div>
+            <div class="level-info">
+                <div class="level-badge">Level 1: First Contact</div>
+                <div class="objective">Objective: <span id="objective">Stage all changes, commit, and push to remote</span></div>
+            </div>
+        </div>
+
+        <!-- Left panel - Ship & Staging -->
+        <div class="ship-panel">
+            <div class="panel">
+                <div class="panel-title">Your Ship</div>
+                <div class="ship-display">
+                    <div class="ship-icon">🛸</div>
+                    <div class="ship-name">Local Repository</div>
+                </div>
+            </div>
+
+            <div class="panel" style="flex: 1;">
+                <div class="panel-title">Cargo Hold (Staging Area)</div>
+                <div class="staging-area empty" id="stagingArea"></div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">Mission Control</div>
+                <div class="commit-section">
+                    <textarea class="commit-message" id="commitMessage" placeholder="Describe your changes..." rows="2"></textarea>
+                    <button class="btn btn-commit" id="commitBtn" disabled onclick="makeCommit()">
+                        💾 Commit
+                    </button>
+                    <button class="btn btn-push" id="pushBtn" disabled onclick="pushCommits()">
+                        🚀 Push to Remote
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center - Space with floating changes -->
+        <div class="space-area" id="spaceArea">
+            <!-- Floating changes will be added here -->
+        </div>
+
+        <!-- Right panel - Timeline & Remote -->
+        <div class="timeline-panel">
+            <div class="panel">
+                <div class="panel-title">Remote Station</div>
+                <div class="remote-display">
+                    <div class="remote-icon">🛰️</div>
+                    <div class="remote-name">GitHub</div>
+                    <div class="remote-status">
+                        <span class="commits-ahead" id="commitsAhead">0</span> commits to push
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel" style="flex: 1;">
+                <div class="panel-title">Timeline (Git Log)</div>
+                <div class="timeline" id="timeline">
+                    <div class="timeline-line"></div>
+                    <!-- Initial commit -->
+                    <div class="commit-node pushed">
+                        <div class="commit-hash">#a1b2c3d</div>
+                        <div class="commit-msg">Initial commit</div>
+                        <div class="commit-files">📄 index.html</div>
+                        <div class="commit-status pushed">✓ pushed</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <div class="help-item">
+                <span class="help-key">Drag</span>
+                <span>Stage changes</span>
+            </div>
+            <div class="help-item">
+                <span class="help-key">Click staged</span>
+                <span>Unstage</span>
+            </div>
+            <div class="help-item">
+                <span class="help-key">Commit</span>
+                <span>Save snapshot</span>
+            </div>
+            <div class="help-item">
+                <span class="help-key">Push</span>
+                <span>Send to GitHub</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game state
+        let stagedFiles = [];
+        let commits = [];
+        let unpushedCommits = 0;
+        let draggedElement = null;
+
+        // File types for the level
+        const levelChanges = [
+            { name: 'style.css', type: 'css', icon: '🎨' },
+            { name: 'game.js', type: 'js', icon: '⚡' },
+            { name: 'index.html', type: 'html', icon: '📄' }
+        ];
+
+        // Create starfield
+        function createStars() {
+            const starfield = document.getElementById('starfield');
+            for (let i = 0; i < 150; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.width = Math.random() * 3 + 1 + 'px';
+                star.style.height = star.style.width;
+                star.style.animationDelay = Math.random() * 2 + 's';
+                starfield.appendChild(star);
+            }
+        }
+
+        // Create floating changes in space
+        function createFloatingChanges() {
+            const spaceArea = document.getElementById('spaceArea');
+            const areaRect = spaceArea.getBoundingClientRect();
+
+            levelChanges.forEach((file, index) => {
+                const change = document.createElement('div');
+                change.className = `floating-change ${file.type}`;
+                change.setAttribute('draggable', 'true');
+                change.dataset.filename = file.name;
+                change.dataset.type = file.type;
+                change.dataset.icon = file.icon;
+
+                // Position randomly but spread out
+                const x = 50 + (index * 150) + Math.random() * 50;
+                const y = 50 + Math.random() * (300);
+                change.style.left = x + 'px';
+                change.style.top = y + 'px';
+                change.style.animationDelay = (index * 0.5) + 's';
+
+                change.innerHTML = `
+                    <div class="icon">${file.icon}</div>
+                    <div class="filename">${file.name}</div>
+                `;
+
+                // Drag events
+                change.addEventListener('dragstart', handleDragStart);
+                change.addEventListener('dragend', handleDragEnd);
+
+                spaceArea.appendChild(change);
+            });
+        }
+
+        // Drag and drop handlers
+        function handleDragStart(e) {
+            draggedElement = e.target.closest('.floating-change');
+            draggedElement.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleDragEnd(e) {
+            if (draggedElement) {
+                draggedElement.classList.remove('dragging');
+                draggedElement = null;
+            }
+        }
+
+        // Setup staging area drop zone
+        function setupStagingArea() {
+            const stagingArea = document.getElementById('stagingArea');
+
+            stagingArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                stagingArea.classList.add('drag-over');
+            });
+
+            stagingArea.addEventListener('dragleave', () => {
+                stagingArea.classList.remove('drag-over');
+            });
+
+            stagingArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                stagingArea.classList.remove('drag-over');
+
+                if (draggedElement) {
+                    const filename = draggedElement.dataset.filename;
+                    const icon = draggedElement.dataset.icon;
+
+                    // Check if already staged
+                    if (stagedFiles.find(f => f.name === filename)) {
+                        showToast('Already staged!', 'error');
+                        return;
+                    }
+
+                    // Stage the file
+                    stagedFiles.push({ name: filename, icon: icon });
+
+                    // Remove from space
+                    draggedElement.remove();
+
+                    // Update staging area display
+                    updateStagingArea();
+
+                    // Show toast
+                    showToast(`Staged: ${filename}`, 'success');
+
+                    // Update commit button
+                    updateButtons();
+                }
+            });
+        }
+
+        // Update staging area display
+        function updateStagingArea() {
+            const stagingArea = document.getElementById('stagingArea');
+            stagingArea.innerHTML = '';
+
+            if (stagedFiles.length === 0) {
+                stagingArea.classList.add('empty');
+            } else {
+                stagingArea.classList.remove('empty');
+
+                stagedFiles.forEach((file, index) => {
+                    const fileEl = document.createElement('div');
+                    fileEl.className = 'staged-file';
+                    fileEl.innerHTML = `${file.icon} ${file.name} <span class="remove">×</span>`;
+                    fileEl.onclick = () => unstageFile(index);
+                    stagingArea.appendChild(fileEl);
+                });
+            }
+        }
+
+        // Unstage a file
+        function unstageFile(index) {
+            const file = stagedFiles[index];
+            stagedFiles.splice(index, 1);
+
+            // Add back to space
+            const spaceArea = document.getElementById('spaceArea');
+            const change = document.createElement('div');
+            const type = file.name.split('.').pop();
+            change.className = `floating-change ${type}`;
+            change.setAttribute('draggable', 'true');
+            change.dataset.filename = file.name;
+            change.dataset.type = type;
+            change.dataset.icon = file.icon;
+            change.style.left = (100 + Math.random() * 200) + 'px';
+            change.style.top = (50 + Math.random() * 200) + 'px';
+
+            change.innerHTML = `
+                <div class="icon">${file.icon}</div>
+                <div class="filename">${file.name}</div>
+            `;
+
+            change.addEventListener('dragstart', handleDragStart);
+            change.addEventListener('dragend', handleDragEnd);
+
+            spaceArea.appendChild(change);
+
+            updateStagingArea();
+            updateButtons();
+            showToast(`Unstaged: ${file.name}`, 'success');
+        }
+
+        // Update button states
+        function updateButtons() {
+            const commitBtn = document.getElementById('commitBtn');
+            const pushBtn = document.getElementById('pushBtn');
+            const commitMessage = document.getElementById('commitMessage');
+
+            // Commit button: need staged files and a message
+            commitBtn.disabled = stagedFiles.length === 0 || commitMessage.value.trim() === '';
+
+            // Push button: need unpushed commits
+            pushBtn.disabled = unpushedCommits === 0;
+        }
+
+        // Make a commit
+        function makeCommit() {
+            const commitMessage = document.getElementById('commitMessage');
+            const message = commitMessage.value.trim();
+
+            if (stagedFiles.length === 0 || message === '') return;
+
+            // Create commit
+            const commit = {
+                hash: generateHash(),
+                message: message,
+                files: [...stagedFiles],
+                pushed: false
+            };
+
+            commits.push(commit);
+            unpushedCommits++;
+
+            // Add to timeline
+            addCommitToTimeline(commit);
+
+            // Clear staging
+            stagedFiles = [];
+            updateStagingArea();
+            commitMessage.value = '';
+
+            // Update UI
+            updateButtons();
+            updateCommitsAhead();
+
+            showToast('Commit created! ✓', 'success');
+        }
+
+        // Generate fake commit hash
+        function generateHash() {
+            return '#' + Math.random().toString(16).substr(2, 7);
+        }
+
+        // Add commit to timeline
+        function addCommitToTimeline(commit) {
+            const timeline = document.getElementById('timeline');
+
+            const node = document.createElement('div');
+            node.className = 'commit-node';
+            node.dataset.hash = commit.hash;
+
+            const filesText = commit.files.map(f => `${f.icon} ${f.name}`).join(', ');
+
+            node.innerHTML = `
+                <div class="commit-hash">${commit.hash}</div>
+                <div class="commit-msg">${commit.message}</div>
+                <div class="commit-files">${filesText}</div>
+                <div class="commit-status local">⏳ local only</div>
+            `;
+
+            // Insert after the timeline line but before other commits
+            const firstCommit = timeline.querySelector('.commit-node');
+            timeline.insertBefore(node, firstCommit);
+        }
+
+        // Update commits ahead counter
+        function updateCommitsAhead() {
+            document.getElementById('commitsAhead').textContent = unpushedCommits;
+        }
+
+        // Push commits
+        function pushCommits() {
+            if (unpushedCommits === 0) return;
+
+            // Show push animation
+            const pushAnim = document.getElementById('pushAnimation');
+            pushAnim.classList.add('active');
+
+            setTimeout(() => {
+                pushAnim.classList.remove('active');
+
+                // Update all unpushed commits
+                const unpushedNodes = document.querySelectorAll('.commit-node:not(.pushed)');
+                unpushedNodes.forEach(node => {
+                    node.classList.add('pushed');
+                    const status = node.querySelector('.commit-status');
+                    status.className = 'commit-status pushed';
+                    status.textContent = '✓ pushed';
+                });
+
+                // Update counters
+                commits.forEach(c => c.pushed = true);
+                unpushedCommits = 0;
+                updateCommitsAhead();
+                updateButtons();
+
+                showToast('Pushed to GitHub! 🚀', 'success');
+
+                // Check for level complete
+                checkLevelComplete();
+
+            }, 1500);
+        }
+
+        // Check if level is complete
+        function checkLevelComplete() {
+            const remainingChanges = document.querySelectorAll('.floating-change');
+
+            if (remainingChanges.length === 0 && stagedFiles.length === 0 && unpushedCommits === 0 && commits.length > 0) {
+                setTimeout(() => {
+                    document.getElementById('levelComplete').classList.add('active');
+                }, 500);
+            }
+        }
+
+        // Show toast notification
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type} active`;
+
+            setTimeout(() => {
+                toast.classList.remove('active');
+            }, 2000);
+        }
+
+        // Start game
+        function startGame() {
+            document.getElementById('tutorial').classList.remove('active');
+        }
+
+        // Restart level
+        function restartLevel() {
+            location.reload();
+        }
+
+        // Listen for commit message changes
+        document.getElementById('commitMessage').addEventListener('input', updateButtons);
+
+        // Initialize
+        createStars();
+        createFloatingChanges();
+        setupStagingArea();
+        updateButtons();
+    </script>
+</body>
+</html>
