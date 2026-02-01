@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Fun Platformer - jax.fun</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .navbar {
+            padding: 20px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 10;
+        }
+        .back-home {
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 700;
+            transition: all 0.2s;
+        }
+        .back-home:hover { color: #fff; }
+        .game-name {
+            font-size: 0.95rem;
+            font-weight: 700;
+            opacity: 0.8;
+        }
+
+        .game-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 10px 24px 60px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .game-header {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .game-header h1 {
+            font-size: 2rem;
+            font-weight: 900;
+            margin-bottom: 5px;
+            text-shadow: 3px 3px 0 rgba(0,0,0,0.2);
+        }
+        .game-header p {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        #gameCanvas {
+            display: block;
+            margin: 0 auto;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .level-indicator {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .controls-hint {
+            text-align: center;
+            margin-top: 10px;
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+
+        /* Level transition overlay */
+        .level-transition {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 100;
+        }
+        .level-transition.active {
+            display: flex;
+        }
+        .level-transition h2 {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            animation: pulse 0.5s infinite alternate;
+        }
+        .level-transition p {
+            font-size: 1.5rem;
+            opacity: 0.8;
+        }
+        @keyframes pulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.1); }
+        }
+
+        /* JUMPSCARE OVERLAY */
+        .jumpscare {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        .jumpscare.active {
+            display: flex;
+            animation: shake 0.1s infinite;
+        }
+        .jumpscare img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        @keyframes shake {
+            0% { transform: translate(5px, 5px); }
+            25% { transform: translate(-5px, 5px); }
+            50% { transform: translate(-5px, -5px); }
+            75% { transform: translate(5px, -5px); }
+            100% { transform: translate(5px, 5px); }
+        }
+
+        /* CSS Scary Face Fallback */
+        .scary-face {
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(ellipse at center, #3d2914 0%, #1a0f05 50%, #000 100%);
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .face-container {
+            position: relative;
+            width: 80vmin;
+            height: 80vmin;
+        }
+        .scary-eye {
+            position: absolute;
+            width: 22vmin;
+            height: 28vmin;
+            background: #fff;
+            border-radius: 50%;
+            top: 15%;
+            box-shadow: 0 0 60px #fff, 0 0 100px #fff, inset 0 0 30px rgba(0,0,0,0.3);
+        }
+        .scary-eye.left { left: 10%; }
+        .scary-eye.right { right: 10%; }
+        .scary-pupil {
+            position: absolute;
+            width: 12vmin;
+            height: 14vmin;
+            background: #000;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .scary-pupil::after {
+            content: '';
+            position: absolute;
+            width: 3vmin;
+            height: 3vmin;
+            background: #600;
+            border-radius: 50%;
+            top: 30%;
+            left: 30%;
+        }
+        .scary-mouth {
+            position: absolute;
+            width: 65vmin;
+            height: 35vmin;
+            background: #000;
+            border-radius: 0 0 50% 50%;
+            bottom: 5%;
+            left: 50%;
+            transform: translateX(-50%);
+            overflow: hidden;
+            box-shadow: inset 0 -20px 40px rgba(80,0,0,0.8);
+        }
+        .teeth-row {
+            position: absolute;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 1vmin;
+        }
+        .teeth-row.top { top: 0; }
+        .teeth-row.bottom { bottom: 0; }
+        .tooth {
+            width: 6vmin;
+            height: 8vmin;
+            background: #fffde7;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
+        }
+        .teeth-row.top .tooth {
+            border-radius: 0 0 40% 40%;
+        }
+        .teeth-row.bottom .tooth {
+            border-radius: 40% 40% 0 0;
+            height: 6vmin;
+        }
+        .tongue {
+            position: absolute;
+            width: 30vmin;
+            height: 20vmin;
+            background: #8b0000;
+            border-radius: 50% 50% 50% 50%;
+            bottom: -5vmin;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        /* Final level special message */
+        .final-level-msg {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            padding: 30px 50px;
+            border-radius: 20px;
+            text-align: center;
+            z-index: 50;
+            display: none;
+            animation: bounce 0.5s ease;
+        }
+        .final-level-msg.active {
+            display: block;
+        }
+        .final-level-msg h2 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        .final-level-msg p {
+            font-size: 1.3rem;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.1); }
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 14px 36px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #fff;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            margin-top: 20px;
+        }
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+        }
+
+        /* Start screen */
+        .start-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 200;
+        }
+        .start-screen h1 {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            text-shadow: 4px 4px 0 rgba(0,0,0,0.2);
+        }
+        .start-screen p {
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+            opacity: 0.9;
+        }
+        .start-screen.hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Start Screen -->
+    <div class="start-screen" id="startScreen">
+        <h1>Super Fun Platformer!</h1>
+        <p>Complete all 5 levels to win!</p>
+        <button class="btn" id="startBtn">START GAME</button>
+        <p style="margin-top: 20px; font-size: 0.9rem; opacity: 0.7;">Use ARROW KEYS or WASD to move, SPACE to jump</p>
+    </div>
+
+    <!-- Level transition -->
+    <div class="level-transition" id="levelTransition">
+        <h2 id="transitionTitle">LEVEL COMPLETE!</h2>
+        <p id="transitionMsg">Get ready for the next level...</p>
+    </div>
+
+    <!-- Final level special message -->
+    <div class="final-level-msg" id="finalLevelMsg">
+        <h2>YOU'RE ALMOST DONE!</h2>
+        <p>Just ONE more level to beat the game!</p>
+        <button class="btn" id="finalLevelBtn">LET'S GO!</button>
+    </div>
+
+    <!-- JUMPSCARE -->
+    <div class="jumpscare" id="jumpscare">
+        <div class="scary-face">
+            <div class="face-container">
+                <div class="scary-eye left">
+                    <div class="scary-pupil"></div>
+                </div>
+                <div class="scary-eye right">
+                    <div class="scary-pupil"></div>
+                </div>
+                <div class="scary-mouth">
+                    <div class="teeth-row top">
+                        <div class="tooth"></div>
+                        <div class="tooth"></div>
+                        <div class="tooth"></div>
+                        <div class="tooth"></div>
+                        <div class="tooth"></div>
+                        <div class="tooth"></div>
+                        <div class="tooth"></div>
+                        <div class="tooth"></div>
+                    </div>
+                    <div class="teeth-row bottom">
+                        <div class="tooth"></div>
+                        <div class="tooth"></div>
+                        <div class="tooth"></div>
+                        <div class="tooth"></div>
+                        <div class="tooth"></div>
+                        <div class="tooth"></div>
+                        <div class="tooth"></div>
+                    </div>
+                    <div class="tongue"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <nav class="navbar">
+        <a href="../../../index.html" class="back-home">← Back to jax.fun</a>
+        <span class="game-name">Super Fun Platformer</span>
+    </nav>
+
+    <div class="game-container">
+        <div class="game-header">
+            <h1>Super Fun Platformer</h1>
+            <p>Collect the star to complete each level!</p>
+        </div>
+
+        <canvas id="gameCanvas" width="800" height="450"></canvas>
+
+        <div class="level-indicator">Level: <span id="levelNum">1</span> / 5</div>
+        <div class="controls-hint">ARROW KEYS / WASD to move | SPACE to jump</div>
+    </div>
+
+    <!-- Scary sound - VERY LOUD -->
+    <audio id="scarySound" preload="auto">
+        <source src="https://cdn.freesound.org/previews/718/718178_15563611-hq.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- Happy cheerful music - makes the jumpscare even worse -->
+    <audio id="bgMusic" loop preload="auto">
+        <source src="https://cdn.freesound.org/previews/756/756417_15232790-hq.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- Game sound effects -->
+    <audio id="jumpSound" preload="auto">
+        <source src="https://cdn.freesound.org/previews/383/383240_6512973-hq.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="collectSound" preload="auto">
+        <source src="https://cdn.freesound.org/previews/515/515738_6142149-hq.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="deathSound" preload="auto">
+        <source src="https://cdn.freesound.org/previews/350/350980_5450487-hq.mp3" type="audio/mpeg">
+    </audio>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Game state
+        let currentLevel = 1;
+        let gameRunning = false;
+        let jumpscareTriggered = false;
+
+        // Player
+        const player = {
+            x: 50,
+            y: 300,
+            width: 40,
+            height: 40,
+            velX: 0,
+            velY: 0,
+            speed: 5,
+            jumpPower: 15,
+            onGround: false,
+            color: '#ff6b6b'
+        };
+
+        // Physics
+        const gravity = 0.6;
+        const friction = 0.8;
+
+        // Level data
+        const levels = [
+            // Level 1 - Easy intro
+            {
+                platforms: [
+                    { x: 0, y: 410, width: 800, height: 40 }, // ground
+                    { x: 200, y: 330, width: 120, height: 20 },
+                    { x: 400, y: 280, width: 120, height: 20 },
+                    { x: 600, y: 230, width: 120, height: 20 },
+                ],
+                star: { x: 650, y: 180 },
+                spikes: [],
+                bgColor: '#2c3e50'
+            },
+            // Level 2 - A bit harder
+            {
+                platforms: [
+                    { x: 0, y: 410, width: 200, height: 40 },
+                    { x: 280, y: 350, width: 100, height: 20 },
+                    { x: 450, y: 290, width: 100, height: 20 },
+                    { x: 300, y: 200, width: 100, height: 20 },
+                    { x: 500, y: 150, width: 150, height: 20 },
+                    { x: 700, y: 410, width: 100, height: 40 },
+                ],
+                star: { x: 550, y: 100 },
+                spikes: [
+                    { x: 200, y: 390, width: 80, height: 20 }
+                ],
+                bgColor: '#1a5276'
+            },
+            // Level 3 - Getting tricky
+            {
+                platforms: [
+                    { x: 0, y: 410, width: 150, height: 40 },
+                    { x: 200, y: 360, width: 80, height: 20 },
+                    { x: 350, y: 310, width: 80, height: 20 },
+                    { x: 500, y: 260, width: 80, height: 20 },
+                    { x: 350, y: 180, width: 80, height: 20 },
+                    { x: 200, y: 120, width: 80, height: 20 },
+                    { x: 50, y: 80, width: 100, height: 20 },
+                ],
+                star: { x: 80, y: 30 },
+                spikes: [
+                    { x: 150, y: 390, width: 50, height: 20 },
+                    { x: 280, y: 340, width: 70, height: 20 }
+                ],
+                bgColor: '#4a235a'
+            },
+            // Level 4 - Challenge
+            {
+                platforms: [
+                    { x: 0, y: 410, width: 100, height: 40 },
+                    { x: 150, y: 380, width: 60, height: 20 },
+                    { x: 260, y: 340, width: 60, height: 20 },
+                    { x: 370, y: 300, width: 60, height: 20 },
+                    { x: 480, y: 250, width: 60, height: 20 },
+                    { x: 590, y: 200, width: 60, height: 20 },
+                    { x: 700, y: 150, width: 100, height: 20 },
+                ],
+                star: { x: 730, y: 100 },
+                spikes: [
+                    { x: 100, y: 390, width: 50, height: 20 },
+                    { x: 210, y: 360, width: 50, height: 20 },
+                    { x: 320, y: 320, width: 50, height: 20 },
+                    { x: 430, y: 280, width: 50, height: 20 },
+                    { x: 540, y: 230, width: 50, height: 20 },
+                ],
+                bgColor: '#7b241c'
+            },
+            // Level 5 - THE TROLL LEVEL (triggers jumpscare when star touched)
+            {
+                platforms: [
+                    { x: 0, y: 410, width: 800, height: 40 }, // Just flat ground
+                    { x: 350, y: 320, width: 100, height: 20 }, // Simple platform
+                ],
+                star: { x: 380, y: 270 }, // Easy to reach star
+                spikes: [],
+                bgColor: '#145a32',
+                isTrollLevel: true
+            }
+        ];
+
+        let currentLevelData = levels[0];
+
+        // Keys
+        const keys = {};
+
+        document.addEventListener('keydown', (e) => {
+            keys[e.code] = true;
+            if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+                e.preventDefault();
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            keys[e.code] = false;
+        });
+
+        // Start button
+        document.getElementById('startBtn').addEventListener('click', () => {
+            document.getElementById('startScreen').classList.add('hidden');
+            gameRunning = true;
+            // Try to play background music
+            const bgMusic = document.getElementById('bgMusic');
+            bgMusic.volume = 0.3;
+            bgMusic.play().catch(() => {});
+            gameLoop();
+        });
+
+        // Final level button
+        document.getElementById('finalLevelBtn').addEventListener('click', () => {
+            document.getElementById('finalLevelMsg').classList.remove('active');
+            loadLevel(5);
+            gameRunning = true;
+        });
+
+        function resetPlayer() {
+            player.x = 50;
+            player.y = 300;
+            player.velX = 0;
+            player.velY = 0;
+            player.onGround = false;
+        }
+
+        function loadLevel(levelNum) {
+            currentLevel = levelNum;
+            currentLevelData = levels[levelNum - 1];
+            document.getElementById('levelNum').textContent = levelNum;
+            resetPlayer();
+        }
+
+        function showLevelTransition(title, msg, callback) {
+            const transition = document.getElementById('levelTransition');
+            document.getElementById('transitionTitle').textContent = title;
+            document.getElementById('transitionMsg').textContent = msg;
+            transition.classList.add('active');
+
+            setTimeout(() => {
+                transition.classList.remove('active');
+                if (callback) callback();
+            }, 2000);
+        }
+
+        function triggerJumpscare() {
+            if (jumpscareTriggered) return;
+            jumpscareTriggered = true;
+            gameRunning = false;
+
+            // Stop background music
+            document.getElementById('bgMusic').pause();
+
+            // Show scary image
+            const jumpscare = document.getElementById('jumpscare');
+            jumpscare.classList.add('active');
+
+            // Play VERY LOUD scary sound
+            const scarySound = document.getElementById('scarySound');
+            scarySound.volume = 1.0; // MAX VOLUME
+            scarySound.play();
+
+            // Shake effect stops after 3 seconds, image stays
+            setTimeout(() => {
+                jumpscare.style.animation = 'none';
+            }, 3000);
+        }
+
+        function completeLevel() {
+            gameRunning = false;
+
+            if (currentLevel === 4) {
+                // Play collect sound
+                const collectSound = document.getElementById('collectSound');
+                collectSound.currentTime = 0;
+                collectSound.volume = 0.7;
+                collectSound.play().catch(() => {});
+                // Show special "YOU'RE ALMOST DONE" message before level 5
+                showLevelTransition("LEVEL 4 COMPLETE!", "WOW! You're doing amazing!", () => {
+                    setTimeout(() => {
+                        document.getElementById('finalLevelMsg').classList.add('active');
+                    }, 500);
+                });
+            } else if (currentLevel === 5) {
+                // TROLL TIME - JUMPSCARE! (no collect sound - straight to horror)
+                triggerJumpscare();
+            } else {
+                // Play collect sound
+                const collectSound = document.getElementById('collectSound');
+                collectSound.currentTime = 0;
+                collectSound.volume = 0.7;
+                collectSound.play().catch(() => {});
+                // Normal level complete
+                const messages = [
+                    "Nice job! Keep going!",
+                    "Awesome! You're getting good!",
+                    "Great work! Almost halfway there!"
+                ];
+                showLevelTransition("LEVEL COMPLETE!", messages[currentLevel - 1], () => {
+                    loadLevel(currentLevel + 1);
+                    gameRunning = true;
+                });
+            }
+        }
+
+        function checkCollision(rect1, rect2) {
+            return rect1.x < rect2.x + rect2.width &&
+                   rect1.x + rect1.width > rect2.x &&
+                   rect1.y < rect2.y + rect2.height &&
+                   rect1.y + rect1.height > rect2.y;
+        }
+
+        function update() {
+            // Horizontal movement
+            if (keys['ArrowLeft'] || keys['KeyA']) {
+                player.velX = -player.speed;
+            } else if (keys['ArrowRight'] || keys['KeyD']) {
+                player.velX = player.speed;
+            } else {
+                player.velX *= friction;
+            }
+
+            // Jumping
+            if ((keys['Space'] || keys['ArrowUp'] || keys['KeyW']) && player.onGround) {
+                player.velY = -player.jumpPower;
+                player.onGround = false;
+                // Play jump sound
+                const jumpSound = document.getElementById('jumpSound');
+                jumpSound.currentTime = 0;
+                jumpSound.volume = 0.5;
+                jumpSound.play().catch(() => {});
+            }
+
+            // Apply gravity
+            player.velY += gravity;
+
+            // Move player
+            player.x += player.velX;
+            player.y += player.velY;
+
+            // Platform collision
+            player.onGround = false;
+            for (const platform of currentLevelData.platforms) {
+                if (checkCollision(player, platform)) {
+                    // Landing on top
+                    if (player.velY > 0 && player.y + player.height - player.velY <= platform.y) {
+                        player.y = platform.y - player.height;
+                        player.velY = 0;
+                        player.onGround = true;
+                    }
+                    // Hitting bottom
+                    else if (player.velY < 0 && player.y - player.velY >= platform.y + platform.height) {
+                        player.y = platform.y + platform.height;
+                        player.velY = 0;
+                    }
+                    // Hitting side
+                    else if (player.velX > 0) {
+                        player.x = platform.x - player.width;
+                    } else if (player.velX < 0) {
+                        player.x = platform.x + platform.width;
+                    }
+                }
+            }
+
+            // Spike collision
+            for (const spike of currentLevelData.spikes) {
+                if (checkCollision(player, spike)) {
+                    // Play death sound
+                    const deathSound = document.getElementById('deathSound');
+                    deathSound.currentTime = 0;
+                    deathSound.volume = 0.6;
+                    deathSound.play().catch(() => {});
+                    resetPlayer();
+                }
+            }
+
+            // Star collision
+            const star = currentLevelData.star;
+            const starRect = { x: star.x, y: star.y, width: 30, height: 30 };
+            if (checkCollision(player, starRect)) {
+                completeLevel();
+            }
+
+            // Screen bounds
+            if (player.x < 0) player.x = 0;
+            if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+            if (player.y > canvas.height) {
+                // Play death sound
+                const deathSound = document.getElementById('deathSound');
+                deathSound.currentTime = 0;
+                deathSound.volume = 0.6;
+                deathSound.play().catch(() => {});
+                resetPlayer();
+            }
+        }
+
+        function draw() {
+            // Background
+            ctx.fillStyle = currentLevelData.bgColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Platforms
+            ctx.fillStyle = '#ecf0f1';
+            for (const platform of currentLevelData.platforms) {
+                ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+            }
+
+            // Spikes
+            ctx.fillStyle = '#e74c3c';
+            for (const spike of currentLevelData.spikes) {
+                ctx.beginPath();
+                for (let i = 0; i < spike.width; i += 20) {
+                    ctx.moveTo(spike.x + i, spike.y + spike.height);
+                    ctx.lineTo(spike.x + i + 10, spike.y);
+                    ctx.lineTo(spike.x + i + 20, spike.y + spike.height);
+                }
+                ctx.fill();
+            }
+
+            // Star
+            const star = currentLevelData.star;
+            ctx.fillStyle = '#f1c40f';
+            ctx.beginPath();
+            const starX = star.x + 15;
+            const starY = star.y + 15;
+            for (let i = 0; i < 5; i++) {
+                const angle = (i * 4 * Math.PI / 5) - Math.PI / 2;
+                const x = starX + Math.cos(angle) * 15;
+                const y = starY + Math.sin(angle) * 15;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.fill();
+
+            // Player
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+
+            // Player face
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(player.x + 8, player.y + 10, 8, 8);
+            ctx.fillRect(player.x + 24, player.y + 10, 8, 8);
+            ctx.fillStyle = '#000';
+            ctx.fillRect(player.x + 10, player.y + 12, 4, 4);
+            ctx.fillRect(player.x + 26, player.y + 12, 4, 4);
+            ctx.fillRect(player.x + 12, player.y + 26, 16, 4);
+        }
+
+        function gameLoop() {
+            if (gameRunning) {
+                update();
+                draw();
+            }
+            if (!jumpscareTriggered) {
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        // Initial draw
+        draw();
+    </script>
+</body>
+</html>

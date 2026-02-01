@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>jaxmakes.games</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 50px 24px;
+        }
+        .container { max-width: 1000px; margin: 0 auto; }
+        h1 {
+            font-size: 4rem;
+            font-weight: 900;
+            margin-bottom: 8px;
+            text-shadow: 4px 4px 0 rgba(0,0,0,0.2);
+        }
+        .tagline {
+            font-size: 1.3rem;
+            opacity: 0.9;
+            margin-bottom: 50px;
+        }
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 24px;
+            opacity: 0.9;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .card {
+            background: #fff;
+            border-radius: 24px;
+            padding: 30px;
+            color: #333;
+            transition: all 0.3s;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            text-decoration: none;
+            display: block;
+        }
+        .card:hover {
+            transform: translateY(-8px) rotate(1deg);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+        }
+        /* Card colors */
+        .card:nth-child(6n+1) { background: #ffeaa7; }
+        .card:nth-child(6n+2) { background: #81ecec; }
+        .card:nth-child(6n+3) { background: #fab1a0; }
+        .card:nth-child(6n+4) { background: #a29bfe; }
+        .card:nth-child(6n+5) { background: #55efc4; }
+        .card:nth-child(6n+6) { background: #fd79a8; }
+
+        .card-icon { font-size: 3rem; margin-bottom: 15px; }
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 900;
+            margin-bottom: 8px;
+        }
+        .card-desc { font-size: 0.95rem; opacity: 0.7; }
+        .card-tag {
+            margin-top: 16px;
+        }
+        .tag {
+            display: inline-block;
+            background: rgba(0,0,0,0.1);
+            padding: 6px 14px;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        /* Coming soon card */
+        .coming-soon {
+            background: rgba(255,255,255,0.2) !important;
+            color: #fff;
+            border: 3px dashed rgba(255,255,255,0.4);
+        }
+        .coming-soon:hover {
+            transform: none;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        .coming-soon .card-desc { opacity: 0.7; }
+
+        /* About section */
+        .about {
+            margin-top: 60px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 24px;
+            padding: 40px;
+            display: flex;
+            align-items: center;
+            gap: 30px;
+        }
+        .about-icon { font-size: 4rem; }
+        .about-text h2 {
+            font-size: 1.5rem;
+            font-weight: 900;
+            margin-bottom: 8px;
+        }
+        .about-text p { opacity: 0.9; font-size: 1.1rem; }
+
+        /* Footer */
+        footer {
+            margin-top: 60px;
+            text-align: center;
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+        footer a { color: #fff; }
+
+        /* Stats */
+        .stats {
+            display: flex;
+            gap: 40px;
+            margin-top: 40px;
+            justify-content: center;
+        }
+        .stat {
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 900;
+            text-shadow: 3px 3px 0 rgba(0,0,0,0.2);
+        }
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        @media (max-width: 600px) {
+            h1 { font-size: 2.5rem; }
+            .about { flex-direction: column; text-align: center; }
+            .stats { flex-direction: column; gap: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>jaxmakes.games</h1>
+        <p class="tagline">Games and experiments by Jackson</p>
+
+        <h2 class="section-title">My Stuff</h2>
+        <div class="grid">
+
+            <!-- GAME CARD TEMPLATE - Copy this to add new games!
+            <a href="current-games/FOLDER-NAME/index.html" class="card">
+                <div class="card-icon">🎮</div>
+                <div class="card-title">Game Name</div>
+                <div class="card-desc">Short description of what this does</div>
+                <div class="card-tag"><span class="tag">Game</span></div>
+            </a>
+            -->
+
+            <a href="current-games/cubi-run/index.html" class="card">
+                <div class="card-icon">🏃</div>
+                <div class="card-title">Cubi.Run</div>
+                <div class="card-desc">100 levels of platforming madness</div>
+                <div class="card-tag"><span class="tag">Game</span></div>
+            </a>
+
+            <a href="current-games/fart-beats/index.html" class="card">
+                <div class="card-icon">💨</div>
+                <div class="card-title">Fart Beat Maker</div>
+                <div class="card-desc">Make sick beats with fart sounds</div>
+                <div class="card-tag"><span class="tag">Music</span></div>
+            </a>
+
+            <a href="current-games/geometry-dash-clone/index.html" class="card">
+                <div class="card-icon">🟦</div>
+                <div class="card-title">Geometry Dash Clone</div>
+                <div class="card-desc">Jump, dodge, and don't die</div>
+                <div class="card-tag"><span class="tag">Game</span></div>
+            </a>
+
+            <a href="current-games/food-clicker/index.html" class="card">
+                <div class="card-icon">🍪</div>
+                <div class="card-title">Food Clicker</div>
+                <div class="card-desc">Click food, earn bites, unlock tasty upgrades</div>
+                <div class="card-tag"><span class="tag">Game</span></div>
+            </a>
+
+            <a href="current-games/bubble-wrap-popper/index.html" class="card">
+                <div class="card-icon">🫧</div>
+                <div class="card-title">Bubble Wrap Popper</div>
+                <div class="card-desc">Pop 3D bubbles with satisfying sounds!</div>
+                <div class="card-tag"><span class="tag">Game</span></div>
+            </a>
+
+            <a href="current-games/rock-paper-scissors/index.html" class="card">
+                <div class="card-icon">✊</div>
+                <div class="card-title">Rock Paper Scissors</div>
+                <div class="card-desc">Battle AI or a friend - first to 3 wins!</div>
+                <div class="card-tag"><span class="tag">Game</span></div>
+            </a>
+
+            <a href="current-games/flappy-face/index.html" class="card">
+                <div class="card-icon">🐦</div>
+                <div class="card-title">Flappy Face</div>
+                <div class="card-desc">Put YOUR face on the bird and flap!</div>
+                <div class="card-tag"><span class="tag">Game</span></div>
+            </a>
+
+            <a href="current-games/game-maker/index.html" class="card">
+                <div class="card-icon">🛠️</div>
+                <div class="card-title">Game Maker</div>
+                <div class="card-desc">Design your own games with AI-generated levels!</div>
+                <div class="card-tag"><span class="tag">Creator</span></div>
+            </a>
+
+            <a href="current-games/rubiks-solver/index.html" class="card">
+                <div class="card-icon">🧊</div>
+                <div class="card-title">Rubik's Cube Solver</div>
+                <div class="card-desc">Paint colors on a 3D cube and watch it solve!</div>
+                <div class="card-tag"><span class="tag">Puzzle</span></div>
+            </a>
+
+            <a href="current-games/troll-platformer/index.html" class="card">
+                <div class="card-icon">🏃</div>
+                <div class="card-title">Super Fun Platformer</div>
+                <div class="card-desc">Complete all 5 levels to win! Can you beat it?</div>
+                <div class="card-tag"><span class="tag">Game</span></div>
+            </a>
+
+            <a href="current-games/kitten-rhythm/index.html" class="card">
+                <div class="card-icon">🐱</div>
+                <div class="card-title">Kitten Rhythm</div>
+                <div class="card-desc">Hit arrows to the beat - 10 levels from Baby to Hacker!</div>
+                <div class="card-tag"><span class="tag">Rhythm</span></div>
+            </a>
+
+            <a href="current-games/gd-wave/index.html" class="card">
+                <div class="card-icon">〰️</div>
+                <div class="card-title">GD Wave</div>
+                <div class="card-desc">Geometry Dash wave mode with iconic level patterns!</div>
+                <div class="card-tag"><span class="tag">Game</span></div>
+            </a>
+
+            <a href="current-games/job-simulator/index.html" class="card">
+                <div class="card-icon">💼</div>
+                <div class="card-title">Job Simulator</div>
+                <div class="card-desc">Work 4 different jobs in 3D - gas station, fast food, office & more!</div>
+                <div class="card-tag"><span class="tag">Simulator</span></div>
+            </a>
+
+            <a href="ideas/index.html" class="card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important; color: #fff;">
+                <div class="card-icon">💡</div>
+                <div class="card-title">Idea Tracker</div>
+                <div class="card-desc">40+ project ideas to build - track progress!</div>
+                <div class="card-tag"><span class="tag" style="background: rgba(255,255,255,0.2);">Meta</span></div>
+            </a>
+
+        </div>
+
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-number" id="game-count">0</div>
+                <div class="stat-label">Creations</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">12</div>
+                <div class="stat-label">Years Old</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">∞</div>
+                <div class="stat-label">Ideas</div>
+            </div>
+        </div>
+
+        <div class="about">
+            <div class="about-icon">👋</div>
+            <div class="about-text">
+                <h2>Hey, I'm Jackson</h2>
+                <p>I'm learning to code and building random stuff. Some of it's useful, most of it's just for fun.</p>
+            </div>
+        </div>
+
+        <footer>
+            Built with <a href="https://claude.ai/claude-code" target="_blank">Claude Code</a>
+        </footer>
+    </div>
+
+    <script>
+        const gameCards = document.querySelectorAll('.card[href]');
+        document.getElementById('game-count').textContent = gameCards.length;
+    </script>
+</body>
+</html>

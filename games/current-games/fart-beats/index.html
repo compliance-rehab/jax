@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fart Beat Maker</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            color: #fff;
+            text-shadow: 3px 3px 0 #333;
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #ffd700;
+            font-size: 1.2em;
+            margin-bottom: 30px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            padding: 15px 40px;
+            font-size: 1.5em;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        button:hover {
+            transform: scale(1.1);
+        }
+
+        #playBtn {
+            background: #4CAF50;
+            color: white;
+        }
+
+        #playBtn.playing {
+            background: #f44336;
+        }
+
+        #clearBtn {
+            background: #ff9800;
+            color: white;
+        }
+
+        .tempo-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255,255,255,0.2);
+            padding: 10px 20px;
+            border-radius: 25px;
+            color: white;
+        }
+
+        .tempo-control input {
+            width: 100px;
+        }
+
+        .grid-container {
+            background: rgba(0,0,0,0.3);
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .row-label {
+            width: 120px;
+            color: white;
+            font-weight: bold;
+            font-size: 0.9em;
+            text-align: right;
+            padding-right: 15px;
+        }
+
+        .cell {
+            width: 50px;
+            height: 50px;
+            margin: 3px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.15s;
+            border: 3px solid rgba(255,255,255,0.3);
+        }
+
+        .cell:hover {
+            transform: scale(1.1);
+            border-color: white;
+        }
+
+        .cell.active {
+            transform: scale(1.05);
+        }
+
+        .cell.playing {
+            box-shadow: 0 0 20px white, 0 0 40px white;
+        }
+
+        /* Different colors for each fart type */
+        .row:nth-child(1) .cell { background: #e74c3c44; }
+        .row:nth-child(1) .cell.active { background: #e74c3c; }
+
+        .row:nth-child(2) .cell { background: #9b59b644; }
+        .row:nth-child(2) .cell.active { background: #9b59b6; }
+
+        .row:nth-child(3) .cell { background: #3498db44; }
+        .row:nth-child(3) .cell.active { background: #3498db; }
+
+        .row:nth-child(4) .cell { background: #2ecc7044; }
+        .row:nth-child(4) .cell.active { background: #2ecc71; }
+
+        .row:nth-child(5) .cell { background: #f39c1244; }
+        .row:nth-child(5) .cell.active { background: #f39c12; }
+
+        .row:nth-child(6) .cell { background: #1abc9c44; }
+        .row:nth-child(6) .cell.active { background: #1abc9c; }
+
+        .beat-indicator {
+            display: flex;
+            margin-left: 135px;
+            margin-bottom: 10px;
+        }
+
+        .beat-num {
+            width: 50px;
+            margin: 3px;
+            text-align: center;
+            color: rgba(255,255,255,0.5);
+            font-size: 0.8em;
+        }
+
+        .beat-num.current {
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        .instructions {
+            margin-top: 30px;
+            color: white;
+            text-align: center;
+            max-width: 500px;
+        }
+
+        .instructions h3 {
+            color: #ffd700;
+        }
+    </style>
+</head>
+<body>
+    <h1>💨 Fart Beat Maker 💨</h1>
+    <p class="subtitle">Create the sickest toots!</p>
+
+    <div class="controls">
+        <button id="playBtn" onclick="togglePlay()">▶️ Play</button>
+        <button id="clearBtn" onclick="clearGrid()">🗑️ Clear</button>
+        <div class="tempo-control">
+            <span>Speed:</span>
+            <input type="range" id="tempo" min="60" max="200" value="120" onchange="updateTempo()">
+            <span id="tempoValue">120 BPM</span>
+        </div>
+    </div>
+
+    <div id="loading" style="display: none; color: #ffd700; font-size: 1.5em; margin-bottom: 20px;">
+        Loading fart sounds... 💨
+    </div>
+
+    <div class="grid-container" id="grid-container" style="opacity: 0.5;">
+        <div class="beat-indicator" id="beatIndicator"></div>
+        <div id="grid"></div>
+    </div>
+
+    <div class="instructions">
+        <h3>How to make sick beats:</h3>
+        <p>1. Click the squares to add farts<br>
+           2. Hit Play to hear your creation<br>
+           3. Adjust speed to go faster or slower<br>
+           4. Try different combos for maximum hilarity!</p>
+    </div>
+
+    <script>
+        // Grid settings
+        const ROWS = 6;
+        const COLS = 8;
+        const grid = [];
+
+        // Playback state
+        let isPlaying = false;
+        let currentBeat = 0;
+        let intervalId = null;
+        let tempo = 120;
+        let soundsLoaded = false;
+
+        // Real fart sounds from GitHub (FartMan project)
+        const SOUND_BASE = 'https://raw.githubusercontent.com/smkplus/FartMan/master/Assets/Sounds/';
+        const fartTypes = [
+            { name: "Fart 1", file: "fart-1.wav" },
+            { name: "Fart 2", file: "fart-2.wav" },
+            { name: "Fart 3", file: "fart-3.wav" },
+            { name: "Fart 4", file: "fart-4.wav" },
+            { name: "Fart 5", file: "fart-5.mp3" },
+            { name: "Fart 6", file: "fart-6.mp3" }
+        ];
+
+        // Audio elements for each fart type
+        const audioElements = [];
+
+        // Preload all sounds
+        async function loadSounds() {
+            const loadingEl = document.getElementById('loading');
+            loadingEl.style.display = 'block';
+
+            for (let i = 0; i < fartTypes.length; i++) {
+                const audio = new Audio(SOUND_BASE + fartTypes[i].file);
+                audio.preload = 'auto';
+                audioElements[i] = audio;
+
+                // Wait for each sound to load
+                await new Promise((resolve) => {
+                    audio.addEventListener('canplaythrough', resolve, { once: true });
+                    audio.addEventListener('error', () => {
+                        console.warn(`Failed to load ${fartTypes[i].file}`);
+                        resolve();
+                    }, { once: true });
+                    audio.load();
+                });
+            }
+
+            soundsLoaded = true;
+            loadingEl.style.display = 'none';
+            document.getElementById('grid-container').style.opacity = '1';
+        }
+
+        // Initialize the grid
+        function initGrid() {
+            const gridEl = document.getElementById('grid');
+            const beatIndicator = document.getElementById('beatIndicator');
+
+            // Create beat numbers
+            for (let col = 0; col < COLS; col++) {
+                const beatNum = document.createElement('div');
+                beatNum.className = 'beat-num';
+                beatNum.textContent = col + 1;
+                beatNum.id = `beat-${col}`;
+                beatIndicator.appendChild(beatNum);
+            }
+
+            // Create grid rows
+            for (let row = 0; row < ROWS; row++) {
+                grid[row] = [];
+                const rowEl = document.createElement('div');
+                rowEl.className = 'row';
+
+                const label = document.createElement('div');
+                label.className = 'row-label';
+                label.textContent = fartTypes[row].name;
+                rowEl.appendChild(label);
+
+                for (let col = 0; col < COLS; col++) {
+                    grid[row][col] = false;
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    cell.onclick = () => toggleCell(row, col, cell);
+                    rowEl.appendChild(cell);
+                }
+
+                gridEl.appendChild(rowEl);
+            }
+        }
+
+        // Toggle a cell on/off
+        function toggleCell(row, col, cell) {
+            if (!soundsLoaded) return;
+
+            grid[row][col] = !grid[row][col];
+            cell.classList.toggle('active');
+
+            // Play sound preview when activating
+            if (grid[row][col]) {
+                playFart(row);
+            }
+        }
+
+        // Play a fart sound
+        function playFart(type) {
+            if (!soundsLoaded || !audioElements[type]) return;
+
+            // Clone the audio to allow overlapping sounds
+            const sound = audioElements[type].cloneNode();
+            sound.volume = 0.7;
+            sound.play().catch(e => console.log('Audio play failed:', e));
+        }
+
+        // Toggle play/stop
+        function togglePlay() {
+            if (!soundsLoaded) return;
+
+            isPlaying = !isPlaying;
+            const btn = document.getElementById('playBtn');
+
+            if (isPlaying) {
+                btn.textContent = '⏹️ Stop';
+                btn.classList.add('playing');
+                currentBeat = 0;
+                playBeat();
+                const interval = (60 / tempo) * 1000 / 2; // 8th notes
+                intervalId = setInterval(playBeat, interval);
+            } else {
+                btn.textContent = '▶️ Play';
+                btn.classList.remove('playing');
+                clearInterval(intervalId);
+                clearPlayingIndicators();
+            }
+        }
+
+        // Play current beat
+        function playBeat() {
+            // Clear previous indicators
+            clearPlayingIndicators();
+
+            // Update beat indicator
+            document.getElementById(`beat-${currentBeat}`).classList.add('current');
+
+            // Play all active farts in this column
+            for (let row = 0; row < ROWS; row++) {
+                if (grid[row][currentBeat]) {
+                    playFart(row);
+                    // Visual feedback
+                    const cell = document.querySelector(`[data-row="${row}"][data-col="${currentBeat}"]`);
+                    cell.classList.add('playing');
+                }
+            }
+
+            // Move to next beat
+            currentBeat = (currentBeat + 1) % COLS;
+        }
+
+        // Clear playing indicators
+        function clearPlayingIndicators() {
+            document.querySelectorAll('.cell.playing').forEach(c => c.classList.remove('playing'));
+            document.querySelectorAll('.beat-num.current').forEach(b => b.classList.remove('current'));
+        }
+
+        // Clear the grid
+        function clearGrid() {
+            for (let row = 0; row < ROWS; row++) {
+                for (let col = 0; col < COLS; col++) {
+                    grid[row][col] = false;
+                }
+            }
+            document.querySelectorAll('.cell').forEach(c => c.classList.remove('active'));
+        }
+
+        // Update tempo
+        function updateTempo() {
+            tempo = document.getElementById('tempo').value;
+            document.getElementById('tempoValue').textContent = tempo + ' BPM';
+
+            if (isPlaying) {
+                clearInterval(intervalId);
+                const interval = (60 / tempo) * 1000 / 2;
+                intervalId = setInterval(playBeat, interval);
+            }
+        }
+
+        // Initialize on load
+        initGrid();
+        loadSounds();
+    </script>
+</body>
+</html>

@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Simulator - jax.fun</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #2c3e50 0%, #1a252f 100%);
+            min-height: 100vh;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 15px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0,0,0,0.5);
+            z-index: 100;
+        }
+        .back-home {
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 700;
+            transition: all 0.2s;
+        }
+        .back-home:hover { color: #fff; }
+        .game-name {
+            font-size: 0.95rem;
+            font-weight: 700;
+            opacity: 0.8;
+        }
+
+        #game-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        /* Job Selection Screen */
+        #job-select {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+        #job-select h1 {
+            font-size: 3rem;
+            font-weight: 900;
+            text-shadow: 4px 4px 0 rgba(0,0,0,0.2);
+            margin-bottom: 10px;
+        }
+        #job-select .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 40px;
+        }
+        .jobs-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            max-width: 700px;
+            padding: 0 20px;
+        }
+        .job-card {
+            background: #fff;
+            border-radius: 20px;
+            padding: 30px;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        .job-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+        }
+        .job-card:nth-child(1) { background: #ffeaa7; }
+        .job-card:nth-child(2) { background: #81ecec; }
+        .job-card:nth-child(3) { background: #fab1a0; }
+        .job-card:nth-child(4) { background: #a29bfe; }
+        .job-icon { font-size: 4rem; margin-bottom: 15px; }
+        .job-title { font-size: 1.4rem; font-weight: 900; margin-bottom: 8px; }
+        .job-desc { font-size: 0.9rem; opacity: 0.7; }
+        .job-pay {
+            margin-top: 12px;
+            font-weight: 700;
+            color: #27ae60;
+            font-size: 1rem;
+        }
+
+        /* HUD */
+        #hud {
+            position: fixed;
+            top: 70px;
+            left: 20px;
+            right: 20px;
+            display: none;
+            justify-content: space-between;
+            z-index: 20;
+        }
+        .hud-panel {
+            background: rgba(0,0,0,0.7);
+            padding: 15px 25px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        .hud-money {
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: #2ecc71;
+        }
+        .hud-time {
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+        .hud-rating {
+            color: #f1c40f;
+            font-size: 1.3rem;
+        }
+
+        /* Task Queue */
+        #task-queue {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+            gap: 12px;
+            z-index: 20;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 95%;
+        }
+        .task-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-weight: 700;
+            color: #fff;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        .task-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+        }
+        .task-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .task-btn.active {
+            background: linear-gradient(135deg, #f39c12 0%, #e74c3c 100%);
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* Customer Panel */
+        #customer-panel {
+            position: fixed;
+            top: 130px;
+            right: 20px;
+            width: 280px;
+            display: none;
+            z-index: 20;
+        }
+        .customer-card {
+            background: rgba(255,255,255,0.95);
+            border-radius: 15px;
+            padding: 20px;
+            color: #333;
+            margin-bottom: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+        .customer-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .customer-avatar {
+            font-size: 2.5rem;
+        }
+        .customer-name {
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        .customer-mood {
+            font-size: 0.85rem;
+            opacity: 0.7;
+        }
+        .patience-bar {
+            height: 8px;
+            background: #eee;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        .patience-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #e74c3c, #f39c12, #2ecc71);
+            border-radius: 10px;
+            transition: width 0.3s;
+        }
+        .customer-order {
+            margin-top: 12px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            font-size: 0.9rem;
+        }
+
+        /* Notifications */
+        #notifications {
+            position: fixed;
+            top: 130px;
+            left: 20px;
+            width: 300px;
+            z-index: 30;
+        }
+        .notification {
+            background: rgba(46, 204, 113, 0.95);
+            color: #fff;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            font-weight: 700;
+            animation: slideIn 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .notification.bad {
+            background: rgba(231, 76, 60, 0.95);
+        }
+        @keyframes slideIn {
+            from { transform: translateX(-100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* Shift End Screen */
+        #shift-end {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 60;
+        }
+        #shift-end h2 {
+            font-size: 2.5rem;
+            margin-bottom: 30px;
+        }
+        .shift-stats {
+            background: rgba(255,255,255,0.1);
+            padding: 30px 50px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .shift-stat {
+            margin: 15px 0;
+            font-size: 1.3rem;
+        }
+        .shift-stat span {
+            font-weight: 900;
+            color: #2ecc71;
+        }
+        .end-btns {
+            display: flex;
+            gap: 15px;
+        }
+        .end-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #fff;
+            border-radius: 50px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .end-btn:hover {
+            transform: scale(1.05);
+        }
+
+        /* Instructions */
+        #instructions {
+            position: fixed;
+            bottom: 140px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            padding: 12px 20px;
+            border-radius: 15px;
+            display: none;
+            z-index: 15;
+            text-align: center;
+            max-width: 80%;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 700px) {
+            .jobs-grid { grid-template-columns: 1fr; }
+            #job-select h1 { font-size: 2rem; }
+            .job-card { padding: 20px; }
+            .job-icon { font-size: 3rem; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="../../../index.html" class="back-home">← Back to jax.fun</a>
+        <span class="game-name">Job Simulator</span>
+    </nav>
+
+    <canvas id="game-canvas"></canvas>
+
+    <!-- Job Selection -->
+    <div id="job-select">
+        <h1>Job Simulator</h1>
+        <p class="subtitle">Choose your career for today!</p>
+        <div class="jobs-grid">
+            <div class="job-card" onclick="selectJob('gas')">
+                <div class="job-icon">⛽</div>
+                <div class="job-title">Gas Station</div>
+                <div class="job-desc">Pump gas, wash windows, and keep customers happy!</div>
+                <div class="job-pay">$12/hr + tips</div>
+            </div>
+            <div class="job-card" onclick="selectJob('fastfood')">
+                <div class="job-icon">🍔</div>
+                <div class="job-title">Fast Food</div>
+                <div class="job-desc">Take orders, flip burgers, and serve food fast!</div>
+                <div class="job-pay">$14/hr + tips</div>
+            </div>
+            <div class="job-card" onclick="selectJob('office')">
+                <div class="job-icon">💼</div>
+                <div class="job-title">Office Worker</div>
+                <div class="job-desc">Answer emails, fix printers, and survive meetings!</div>
+                <div class="job-pay">$20/hr</div>
+            </div>
+            <div class="job-card" onclick="selectJob('grocery')">
+                <div class="job-icon">🛒</div>
+                <div class="job-title">Grocery Cashier</div>
+                <div class="job-desc">Scan items, bag groceries, and count change!</div>
+                <div class="job-pay">$13/hr + tips</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HUD -->
+    <div id="hud">
+        <div class="hud-panel">
+            <div class="hud-money">$<span id="money">0.00</span></div>
+        </div>
+        <div class="hud-panel">
+            <div class="hud-time">Shift: <span id="time">5:00</span></div>
+        </div>
+        <div class="hud-panel">
+            <div class="hud-rating">Rating: <span id="rating">⭐⭐⭐⭐⭐</span></div>
+        </div>
+    </div>
+
+    <!-- Customer Panel -->
+    <div id="customer-panel"></div>
+
+    <!-- Task Buttons -->
+    <div id="task-queue"></div>
+
+    <!-- Notifications -->
+    <div id="notifications"></div>
+
+    <!-- Instructions -->
+    <div id="instructions"></div>
+
+    <!-- Shift End Screen -->
+    <div id="shift-end">
+        <h2>Shift Complete!</h2>
+        <div class="shift-stats">
+            <div class="shift-stat">Customers Served: <span id="end-customers">0</span></div>
+            <div class="shift-stat">Money Earned: $<span id="end-money">0.00</span></div>
+            <div class="shift-stat">Tips Earned: $<span id="end-tips">0.00</span></div>
+            <div class="shift-stat">Final Rating: <span id="end-rating">⭐⭐⭐⭐⭐</span></div>
+        </div>
+        <div class="end-btns">
+            <button class="end-btn" onclick="location.reload()">New Job</button>
+            <button class="end-btn" onclick="continueShift()">Work Overtime!</button>
+        </div>
+    </div>
+
+    <script>
+        // Sound Effects from Freesound.org
+        const sounds = {
+            // General sounds
+            cashRegister: new Audio('https://cdn.freesound.org/previews/351/351304_96253-hq.mp3'),
+            doorChime: new Audio('https://cdn.freesound.org/previews/632/632225_611663-hq.mp3'),
+            success: new Audio('https://cdn.freesound.org/previews/607/607207_7724198-hq.mp3'),
+            fail: new Audio('https://cdn.freesound.org/previews/700/700641_12713722-hq.mp3'),
+
+            // Job-specific sounds
+            gasPump: new Audio('https://cdn.freesound.org/previews/451/451551_2863569-hq.mp3'),
+            sizzle: new Audio('https://cdn.freesound.org/previews/575/575514_10643288-hq.mp3'),
+            keyboard: new Audio('https://cdn.freesound.org/previews/365/365487_5407590-hq.mp3'),
+            coffee: new Audio('https://cdn.freesound.org/previews/578/578416_13047739-hq.mp3'),
+            printer: new Audio('https://cdn.freesound.org/previews/339/339490_772944-hq.mp3'),
+            scanner: new Audio('https://cdn.freesound.org/previews/529/529825_10334845-hq.mp3'),
+            windowSpray: new Audio('https://cdn.freesound.org/previews/536/536409_4921277-hq.mp3')
+        };
+
+        // Set volumes
+        Object.values(sounds).forEach(sound => {
+            sound.volume = 0.5;
+        });
+        sounds.success.volume = 0.4;
+        sounds.fail.volume = 0.4;
+
+        // Play sound helper
+        function playSound(soundName) {
+            if (sounds[soundName]) {
+                sounds[soundName].currentTime = 0;
+                sounds[soundName].play().catch(() => {});
+            }
+        }
+
+        // Stop sound helper
+        function stopSound(soundName) {
+            if (sounds[soundName]) {
+                sounds[soundName].pause();
+                sounds[soundName].currentTime = 0;
+            }
+        }
+
+        // Task-specific sounds mapping
+        const taskSounds = {
+            // Gas station
+            pump: 'gasPump',
+            wash: 'windowSpray',
+            payment: 'cashRegister',
+            snacks: 'cashRegister',
+            // Fast food
+            order: 'cashRegister',
+            cook: 'sizzle',
+            fries: 'sizzle',
+            serve: 'cashRegister',
+            // Office
+            email: 'keyboard',
+            printer: 'printer',
+            meeting: 'keyboard',
+            coffee: 'coffee',
+            // Grocery
+            scan: 'scanner',
+            bag: 'cashRegister',
+            change: 'cashRegister',
+            cleanup: 'windowSpray'
+        };
+
+        // Game State
+        let currentJob = null;
+        let money = 0;
+        let tips = 0;
+        let rating = 5;
+        let customersServed = 0;
+        let shiftTime = 300; // 5 minutes in seconds
+        let customers = [];
+        let currentTask = null;
+        let taskProgress = 0;
+        let gameLoop = null;
+        let customerLoop = null;
+
+        // Three.js Setup
+        let scene, camera, renderer;
+        let jobEnvironment = null;
+        let customerModels = [];
+
+        const customerNames = [
+            "Karen", "Bob", "Steve", "Linda", "Mike", "Sarah", "Tom", "Emma",
+            "Dave", "Lisa", "John", "Amy", "Chris", "Jen", "Alex", "Sam"
+        ];
+
+        const customerMoods = ["😊 Happy", "😐 Neutral", "😤 Impatient", "😃 Excited"];
+        const customerAvatars = ["👤", "👨", "👩", "👴", "👵", "🧑", "👱", "👸", "🤵", "👲"];
+
+        // Job Configurations
+        const jobConfigs = {
+            gas: {
+                name: "Gas Station",
+                tasks: [
+                    { id: "pump", name: "Pump Gas", pay: 5, time: 3000, key: "1" },
+                    { id: "wash", name: "Wash Windows", pay: 3, time: 2000, key: "2" },
+                    { id: "payment", name: "Take Payment", pay: 2, time: 1500, key: "3" },
+                    { id: "snacks", name: "Restock Snacks", pay: 4, time: 2500, key: "4" }
+                ],
+                orders: [
+                    "Fill up regular",
+                    "Premium gas please",
+                    "$20 on pump 3",
+                    "Fill it up + window wash",
+                    "Just $10 worth"
+                ],
+                color: 0xffa502,
+                instructions: "Customers need gas! Pump gas (1), wash windows (2), take payment (3), or restock (4)"
+            },
+            fastfood: {
+                name: "Fast Food",
+                tasks: [
+                    { id: "order", name: "Take Order", pay: 2, time: 1500, key: "1" },
+                    { id: "cook", name: "Cook Burger", pay: 4, time: 3000, key: "2" },
+                    { id: "fries", name: "Make Fries", pay: 3, time: 2000, key: "3" },
+                    { id: "serve", name: "Serve Food", pay: 3, time: 1500, key: "4" }
+                ],
+                orders: [
+                    "Burger combo please!",
+                    "2 burgers, large fries",
+                    "Just fries for me",
+                    "Deluxe meal deal",
+                    "Kids meal please!"
+                ],
+                color: 0xe74c3c,
+                instructions: "Hungry customers incoming! Take order (1), cook burger (2), make fries (3), serve food (4)"
+            },
+            office: {
+                name: "Office",
+                tasks: [
+                    { id: "email", name: "Answer Email", pay: 5, time: 2500, key: "1" },
+                    { id: "printer", name: "Fix Printer", pay: 8, time: 4000, key: "2" },
+                    { id: "meeting", name: "Join Meeting", pay: 10, time: 5000, key: "3" },
+                    { id: "coffee", name: "Make Coffee", pay: 3, time: 1500, key: "4" }
+                ],
+                orders: [
+                    "Can you fix the printer?",
+                    "Meeting in 5 minutes!",
+                    "Reply to this ASAP",
+                    "Coffee run needed!",
+                    "Help with spreadsheet?"
+                ],
+                color: 0x3498db,
+                instructions: "Office chaos! Answer emails (1), fix printer (2), join meeting (3), make coffee (4)"
+            },
+            grocery: {
+                name: "Grocery Store",
+                tasks: [
+                    { id: "scan", name: "Scan Items", pay: 3, time: 2000, key: "1" },
+                    { id: "bag", name: "Bag Groceries", pay: 2, time: 1500, key: "2" },
+                    { id: "change", name: "Give Change", pay: 2, time: 1000, key: "3" },
+                    { id: "cleanup", name: "Clean Spill", pay: 5, time: 3000, key: "4" }
+                ],
+                orders: [
+                    "Just these items please",
+                    "Big shopping day!",
+                    "Quick checkout?",
+                    "Paper bags please",
+                    "Price check on aisle 5!"
+                ],
+                color: 0x2ecc71,
+                instructions: "Customers at checkout! Scan items (1), bag groceries (2), give change (3), clean spills (4)"
+            }
+        };
+
+        // Initialize Three.js
+        function initThreeJS() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+            renderer = new THREE.WebGLRenderer({
+                canvas: document.getElementById('game-canvas'),
+                antialias: true
+            });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(10, 20, 10);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            scene.add(directionalLight);
+
+            camera.position.set(0, 5, 10);
+            camera.lookAt(0, 0, 0);
+
+            animate();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Rotate customer models slightly
+            customerModels.forEach((model, i) => {
+                if (model) {
+                    model.rotation.y = Math.sin(Date.now() * 0.001 + i) * 0.1;
+                }
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        // Build 3D Environment
+        function buildEnvironment(jobType) {
+            // Clear existing
+            while(scene.children.length > 2) {
+                scene.remove(scene.children[scene.children.length - 1]);
+            }
+            customerModels = [];
+
+            const config = jobConfigs[jobType];
+
+            // Floor
+            const floorGeometry = new THREE.PlaneGeometry(30, 30);
+            const floorMaterial = new THREE.MeshStandardMaterial({
+                color: 0x808080,
+                roughness: 0.8
+            });
+            const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            scene.add(floor);
+
+            // Walls
+            const wallMaterial = new THREE.MeshStandardMaterial({
+                color: 0xe0e0e0,
+                roughness: 0.9
+            });
+
+            // Back wall
+            const backWall = new THREE.Mesh(
+                new THREE.PlaneGeometry(30, 10),
+                wallMaterial
+            );
+            backWall.position.set(0, 5, -15);
+            scene.add(backWall);
+
+            // Side walls
+            const leftWall = new THREE.Mesh(
+                new THREE.PlaneGeometry(30, 10),
+                wallMaterial
+            );
+            leftWall.position.set(-15, 5, 0);
+            leftWall.rotation.y = Math.PI / 2;
+            scene.add(leftWall);
+
+            const rightWall = new THREE.Mesh(
+                new THREE.PlaneGeometry(30, 10),
+                wallMaterial
+            );
+            rightWall.position.set(15, 5, 0);
+            rightWall.rotation.y = -Math.PI / 2;
+            scene.add(rightWall);
+
+            // Job-specific elements
+            if (jobType === 'gas') {
+                buildGasStation();
+            } else if (jobType === 'fastfood') {
+                buildFastFood();
+            } else if (jobType === 'office') {
+                buildOffice();
+            } else if (jobType === 'grocery') {
+                buildGrocery();
+            }
+        }
+
+        function buildGasStation() {
+            // Gas pumps
+            for (let i = -2; i <= 2; i += 2) {
+                const pump = new THREE.Group();
+
+                const base = new THREE.Mesh(
+                    new THREE.BoxGeometry(1.5, 3, 0.8),
+                    new THREE.MeshStandardMaterial({ color: 0xff6b6b })
+                );
+                base.position.y = 1.5;
+                pump.add(base);
+
+                const screen = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.8, 0.5, 0.1),
+                    new THREE.MeshStandardMaterial({ color: 0x333333 })
+                );
+                screen.position.set(0, 2.5, 0.45);
+                pump.add(screen);
+
+                const hose = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.05, 0.05, 2),
+                    new THREE.MeshStandardMaterial({ color: 0x222222 })
+                );
+                hose.position.set(0.5, 1.5, 0.5);
+                hose.rotation.z = Math.PI / 4;
+                pump.add(hose);
+
+                pump.position.set(i * 3, 0, -5);
+                pump.castShadow = true;
+                scene.add(pump);
+            }
+
+            // Canopy
+            const canopy = new THREE.Mesh(
+                new THREE.BoxGeometry(20, 0.3, 8),
+                new THREE.MeshStandardMaterial({ color: 0xffffff })
+            );
+            canopy.position.set(0, 6, -5);
+            scene.add(canopy);
+
+            // Support pillars
+            for (let x of [-8, 8]) {
+                const pillar = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.3, 0.3, 6),
+                    new THREE.MeshStandardMaterial({ color: 0x888888 })
+                );
+                pillar.position.set(x, 3, -5);
+                scene.add(pillar);
+            }
+
+            // Store building
+            const store = new THREE.Mesh(
+                new THREE.BoxGeometry(8, 5, 6),
+                new THREE.MeshStandardMaterial({ color: 0xffa502 })
+            );
+            store.position.set(-8, 2.5, -12);
+            scene.add(store);
+
+            camera.position.set(0, 8, 12);
+            camera.lookAt(0, 2, -5);
+        }
+
+        function buildFastFood() {
+            // Counter
+            const counter = new THREE.Mesh(
+                new THREE.BoxGeometry(12, 1.2, 2),
+                new THREE.MeshStandardMaterial({ color: 0xe74c3c })
+            );
+            counter.position.set(0, 0.6, -3);
+            scene.add(counter);
+
+            // Menu board
+            const menu = new THREE.Mesh(
+                new THREE.BoxGeometry(10, 4, 0.2),
+                new THREE.MeshStandardMaterial({ color: 0x2c3e50 })
+            );
+            menu.position.set(0, 6, -14.8);
+            scene.add(menu);
+
+            // Kitchen equipment
+            for (let i = -4; i <= 4; i += 4) {
+                const grill = new THREE.Mesh(
+                    new THREE.BoxGeometry(3, 1, 2),
+                    new THREE.MeshStandardMaterial({ color: 0x7f8c8d })
+                );
+                grill.position.set(i, 0.5, -8);
+                scene.add(grill);
+            }
+
+            // Fry station
+            const fryStation = new THREE.Mesh(
+                new THREE.BoxGeometry(2, 2, 1.5),
+                new THREE.MeshStandardMaterial({ color: 0xbdc3c7 })
+            );
+            fryStation.position.set(6, 1, -10);
+            scene.add(fryStation);
+
+            // Cash registers
+            for (let i = -3; i <= 3; i += 3) {
+                const register = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.8, 0.5, 0.6),
+                    new THREE.MeshStandardMaterial({ color: 0x2c3e50 })
+                );
+                register.position.set(i, 1.45, -2.5);
+                scene.add(register);
+            }
+
+            camera.position.set(0, 6, 10);
+            camera.lookAt(0, 2, -5);
+        }
+
+        function buildOffice() {
+            // Desks
+            for (let x = -6; x <= 6; x += 6) {
+                for (let z = -8; z >= -12; z -= 4) {
+                    const desk = new THREE.Mesh(
+                        new THREE.BoxGeometry(4, 0.8, 2),
+                        new THREE.MeshStandardMaterial({ color: 0x8b4513 })
+                    );
+                    desk.position.set(x, 0.4, z);
+                    scene.add(desk);
+
+                    // Computer monitor
+                    const monitor = new THREE.Mesh(
+                        new THREE.BoxGeometry(1.2, 0.8, 0.1),
+                        new THREE.MeshStandardMaterial({ color: 0x333333 })
+                    );
+                    monitor.position.set(x, 1.2, z - 0.5);
+                    scene.add(monitor);
+
+                    // Chair
+                    const chair = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.8, 0.8, 0.8),
+                        new THREE.MeshStandardMaterial({ color: 0x2c3e50 })
+                    );
+                    chair.position.set(x, 0.5, z + 1.5);
+                    scene.add(chair);
+                }
+            }
+
+            // Printer
+            const printer = new THREE.Mesh(
+                new THREE.BoxGeometry(1.5, 0.8, 1),
+                new THREE.MeshStandardMaterial({ color: 0xecf0f1 })
+            );
+            printer.position.set(10, 0.4, -10);
+            scene.add(printer);
+
+            // Coffee machine
+            const coffee = new THREE.Mesh(
+                new THREE.BoxGeometry(0.8, 1.2, 0.6),
+                new THREE.MeshStandardMaterial({ color: 0x2c3e50 })
+            );
+            coffee.position.set(-10, 0.6, -5);
+            scene.add(coffee);
+
+            // Meeting table
+            const meetingTable = new THREE.Mesh(
+                new THREE.BoxGeometry(6, 0.8, 3),
+                new THREE.MeshStandardMaterial({ color: 0x5d4037 })
+            );
+            meetingTable.position.set(8, 0.4, -3);
+            scene.add(meetingTable);
+
+            camera.position.set(0, 10, 8);
+            camera.lookAt(0, 0, -8);
+        }
+
+        function buildGrocery() {
+            // Checkout counters
+            for (let i = -6; i <= 6; i += 6) {
+                const checkout = new THREE.Mesh(
+                    new THREE.BoxGeometry(5, 1, 1.5),
+                    new THREE.MeshStandardMaterial({ color: 0x27ae60 })
+                );
+                checkout.position.set(i, 0.5, 2);
+                scene.add(checkout);
+
+                // Conveyor belt
+                const belt = new THREE.Mesh(
+                    new THREE.BoxGeometry(4, 0.1, 1),
+                    new THREE.MeshStandardMaterial({ color: 0x2c3e50 })
+                );
+                belt.position.set(i, 1.05, 2);
+                scene.add(belt);
+
+                // Register
+                const register = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.6, 0.4, 0.5),
+                    new THREE.MeshStandardMaterial({ color: 0xbdc3c7 })
+                );
+                register.position.set(i + 2, 1.2, 2);
+                scene.add(register);
+            }
+
+            // Shelves
+            for (let x = -10; x <= 10; x += 5) {
+                const shelf = new THREE.Mesh(
+                    new THREE.BoxGeometry(4, 5, 1),
+                    new THREE.MeshStandardMaterial({ color: 0x8b4513 })
+                );
+                shelf.position.set(x, 2.5, -8);
+                scene.add(shelf);
+
+                // Products on shelves
+                for (let y = 0.5; y < 4; y += 1) {
+                    const product = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.3, 0.5, 0.3),
+                        new THREE.MeshStandardMaterial({
+                            color: Math.random() * 0xffffff
+                        })
+                    );
+                    product.position.set(x + (Math.random() - 0.5) * 3, y + 0.5, -7.4);
+                    scene.add(product);
+                }
+            }
+
+            // Shopping carts
+            for (let i = 0; i < 3; i++) {
+                const cart = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.8, 0.6, 1.2),
+                    new THREE.MeshStandardMaterial({ color: 0xbdc3c7, wireframe: true })
+                );
+                cart.position.set(-12 + i * 1.5, 0.4, 8);
+                scene.add(cart);
+            }
+
+            camera.position.set(0, 8, 12);
+            camera.lookAt(0, 1, 0);
+        }
+
+        function addCustomerModel(customerId) {
+            const group = new THREE.Group();
+
+            // Body
+            const body = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.4, 0.5, 1.5, 8),
+                new THREE.MeshStandardMaterial({
+                    color: Math.random() * 0xffffff
+                })
+            );
+            body.position.y = 0.75;
+            group.add(body);
+
+            // Head
+            const head = new THREE.Mesh(
+                new THREE.SphereGeometry(0.35, 16, 16),
+                new THREE.MeshStandardMaterial({ color: 0xffdbac })
+            );
+            head.position.y = 1.85;
+            group.add(head);
+
+            // Position based on customer count
+            const xPos = -4 + (customerModels.length % 5) * 2;
+            group.position.set(xPos, 0, 5 + Math.floor(customerModels.length / 5) * 2);
+            group.castShadow = true;
+
+            scene.add(group);
+            customerModels.push(group);
+        }
+
+        function removeCustomerModel(index) {
+            if (customerModels[index]) {
+                scene.remove(customerModels[index]);
+                customerModels[index] = null;
+            }
+        }
+
+        // Game Logic
+        function selectJob(jobType) {
+            currentJob = jobType;
+            document.getElementById('job-select').style.display = 'none';
+            document.getElementById('hud').style.display = 'flex';
+            document.getElementById('task-queue').style.display = 'flex';
+            document.getElementById('customer-panel').style.display = 'block';
+            document.getElementById('instructions').style.display = 'block';
+            document.getElementById('instructions').textContent = jobConfigs[jobType].instructions;
+
+            buildEnvironment(jobType);
+            setupTaskButtons();
+            startGame();
+        }
+
+        function setupTaskButtons() {
+            const taskQueue = document.getElementById('task-queue');
+            taskQueue.innerHTML = '';
+
+            const config = jobConfigs[currentJob];
+            config.tasks.forEach(task => {
+                const btn = document.createElement('button');
+                btn.className = 'task-btn';
+                btn.id = `task-${task.id}`;
+                btn.innerHTML = `${task.name} [${task.key}]`;
+                btn.onclick = () => performTask(task);
+                taskQueue.appendChild(btn);
+            });
+        }
+
+        function startGame() {
+            // Add initial customers
+            spawnCustomer();
+            setTimeout(spawnCustomer, 2000);
+
+            // Start game loop
+            gameLoop = setInterval(updateGame, 1000);
+            customerLoop = setInterval(() => {
+                if (customers.length < 4 && Math.random() > 0.3) {
+                    spawnCustomer();
+                }
+            }, 5000);
+
+            // Keyboard controls
+            document.addEventListener('keydown', handleKeyPress);
+        }
+
+        function handleKeyPress(e) {
+            const config = jobConfigs[currentJob];
+            const task = config.tasks.find(t => t.key === e.key);
+            if (task && !currentTask) {
+                performTask(task);
+            }
+        }
+
+        function updateGame() {
+            // Update shift time
+            shiftTime--;
+            const mins = Math.floor(shiftTime / 60);
+            const secs = shiftTime % 60;
+            document.getElementById('time').textContent =
+                `${mins}:${secs.toString().padStart(2, '0')}`;
+
+            // Update customer patience
+            customers.forEach((customer, index) => {
+                customer.patience -= 2;
+                if (customer.patience <= 0) {
+                    loseCustomer(index);
+                }
+            });
+
+            updateCustomerPanel();
+
+            // End shift
+            if (shiftTime <= 0) {
+                endShift();
+            }
+        }
+
+        function spawnCustomer() {
+            const config = jobConfigs[currentJob];
+            const customer = {
+                id: Date.now(),
+                name: customerNames[Math.floor(Math.random() * customerNames.length)],
+                avatar: customerAvatars[Math.floor(Math.random() * customerAvatars.length)],
+                mood: customerMoods[Math.floor(Math.random() * customerMoods.length)],
+                order: config.orders[Math.floor(Math.random() * config.orders.length)],
+                patience: 100,
+                tasksDone: 0,
+                tasksNeeded: 2 + Math.floor(Math.random() * 2)
+            };
+
+            customers.push(customer);
+            addCustomerModel(customer.id);
+            updateCustomerPanel();
+            notify(`${customer.name} arrived: "${customer.order}"`, false);
+            playSound('doorChime');
+        }
+
+        function updateCustomerPanel() {
+            const panel = document.getElementById('customer-panel');
+            panel.innerHTML = '';
+
+            customers.forEach((customer, index) => {
+                const card = document.createElement('div');
+                card.className = 'customer-card';
+                card.innerHTML = `
+                    <div class="customer-header">
+                        <div class="customer-avatar">${customer.avatar}</div>
+                        <div>
+                            <div class="customer-name">${customer.name}</div>
+                            <div class="customer-mood">${customer.mood}</div>
+                        </div>
+                    </div>
+                    <div class="customer-order">"${customer.order}"</div>
+                    <div class="patience-bar">
+                        <div class="patience-fill" style="width: ${customer.patience}%"></div>
+                    </div>
+                    <div style="font-size: 0.8rem; margin-top: 8px; opacity: 0.7;">
+                        Tasks: ${customer.tasksDone}/${customer.tasksNeeded}
+                    </div>
+                `;
+                panel.appendChild(card);
+            });
+        }
+
+        function performTask(task) {
+            if (currentTask || customers.length === 0) return;
+
+            currentTask = task;
+            const btn = document.getElementById(`task-${task.id}`);
+            btn.classList.add('active');
+            btn.disabled = true;
+
+            // Play task-specific sound
+            const soundName = taskSounds[task.id];
+            if (soundName) {
+                playSound(soundName);
+            }
+
+            // Disable all buttons during task
+            document.querySelectorAll('.task-btn').forEach(b => b.disabled = true);
+
+            // Simulate task progress
+            setTimeout(() => {
+                completeTask(task);
+            }, task.time);
+        }
+
+        function completeTask(task) {
+            // Stop the task sound
+            const soundName = taskSounds[task.id];
+            if (soundName) {
+                stopSound(soundName);
+            }
+
+            const basePay = task.pay;
+            const tipChance = Math.random();
+            let earned = basePay;
+            let tipAmount = 0;
+
+            if (tipChance > 0.5) {
+                tipAmount = Math.round((1 + Math.random() * 3) * 100) / 100;
+                tips += tipAmount;
+                playSound('cashRegister');
+            }
+
+            money += earned;
+            document.getElementById('money').textContent = money.toFixed(2);
+
+            // Progress on first customer
+            if (customers.length > 0) {
+                customers[0].tasksDone++;
+
+                if (customers[0].tasksDone >= customers[0].tasksNeeded) {
+                    serveCustomer(0);
+                }
+            }
+
+            // Notification
+            let msg = `+$${earned.toFixed(2)} for ${task.name}`;
+            if (tipAmount > 0) {
+                msg += ` (+$${tipAmount.toFixed(2)} tip!)`;
+            }
+            notify(msg, false);
+
+            // Reset task state
+            currentTask = null;
+            document.querySelectorAll('.task-btn').forEach(btn => {
+                btn.classList.remove('active');
+                btn.disabled = false;
+            });
+
+            updateCustomerPanel();
+        }
+
+        function serveCustomer(index) {
+            const customer = customers[index];
+            customersServed++;
+
+            // Bonus for happy customer
+            const bonus = Math.round(customer.patience / 20);
+            money += bonus;
+            document.getElementById('money').textContent = money.toFixed(2);
+
+            notify(`${customer.name} served! +$${bonus} satisfaction bonus`, false);
+            playSound('success');
+
+            removeCustomerModel(index);
+            customers.splice(index, 1);
+            updateCustomerPanel();
+        }
+
+        function loseCustomer(index) {
+            const customer = customers[index];
+
+            rating = Math.max(1, rating - 0.5);
+            updateRating();
+
+            notify(`${customer.name} left angry! Rating dropped.`, true);
+            playSound('fail');
+
+            removeCustomerModel(index);
+            customers.splice(index, 1);
+            updateCustomerPanel();
+        }
+
+        function updateRating() {
+            const stars = '⭐'.repeat(Math.floor(rating)) +
+                         (rating % 1 >= 0.5 ? '✨' : '');
+            document.getElementById('rating').textContent = stars;
+        }
+
+        function notify(message, isBad) {
+            const container = document.getElementById('notifications');
+            const notif = document.createElement('div');
+            notif.className = 'notification' + (isBad ? ' bad' : '');
+            notif.textContent = message;
+            container.appendChild(notif);
+
+            setTimeout(() => notif.remove(), 3000);
+        }
+
+        function endShift() {
+            clearInterval(gameLoop);
+            clearInterval(customerLoop);
+            document.removeEventListener('keydown', handleKeyPress);
+
+            // Stop any playing sounds
+            Object.keys(sounds).forEach(key => stopSound(key));
+
+            // Play success jingle for completing shift
+            playSound('success');
+
+            document.getElementById('shift-end').style.display = 'flex';
+            document.getElementById('end-customers').textContent = customersServed;
+            document.getElementById('end-money').textContent = money.toFixed(2);
+            document.getElementById('end-tips').textContent = tips.toFixed(2);
+            document.getElementById('end-rating').textContent =
+                '⭐'.repeat(Math.floor(rating)) + (rating % 1 >= 0.5 ? '✨' : '');
+        }
+
+        function continueShift() {
+            document.getElementById('shift-end').style.display = 'none';
+            shiftTime = 300;
+            gameLoop = setInterval(updateGame, 1000);
+            customerLoop = setInterval(() => {
+                if (customers.length < 4 && Math.random() > 0.3) {
+                    spawnCustomer();
+                }
+            }, 5000);
+            document.addEventListener('keydown', handleKeyPress);
+        }
+
+        // Window resize handler
+        window.addEventListener('resize', () => {
+            if (camera && renderer) {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+        });
+
+        // Initialize
+        initThreeJS();
+    </script>
+</body>
+</html>

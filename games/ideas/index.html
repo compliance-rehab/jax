@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Idea Tracker | jaxmakes.games</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 30px 24px;
+        }
+        .container { max-width: 1000px; margin: 0 auto; }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .back-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: #fff;
+            font-size: 1.5rem;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .back-btn:hover { background: rgba(255,255,255,0.3); transform: scale(1.1); }
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 900;
+            text-shadow: 3px 3px 0 rgba(0,0,0,0.2);
+        }
+        .subtitle { opacity: 0.9; margin-top: 4px; }
+
+        /* Stats bar */
+        .stats-bar {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        .stat-pill {
+            background: rgba(255,255,255,0.2);
+            padding: 10px 20px;
+            border-radius: 100px;
+            font-weight: 700;
+        }
+        .stat-pill span { font-size: 1.3rem; }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        .filter-btn {
+            background: rgba(255,255,255,0.2);
+            border: 2px solid transparent;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 100px;
+            font-family: inherit;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .filter-btn:hover { background: rgba(255,255,255,0.3); }
+        .filter-btn.active { background: #fff; color: #764ba2; }
+        .add-btn {
+            background: #55efc4;
+            color: #333;
+            margin-left: auto;
+        }
+        .add-btn:hover { background: #00d2d3; transform: scale(1.05); }
+
+        /* Search */
+        .search-box {
+            width: 100%;
+            padding: 15px 25px;
+            border-radius: 100px;
+            border: none;
+            font-family: inherit;
+            font-size: 1rem;
+            margin-bottom: 30px;
+            background: rgba(255,255,255,0.95);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        .search-box:focus { outline: 3px solid #55efc4; }
+
+        /* Category sections */
+        .category {
+            background: rgba(255,255,255,0.1);
+            border-radius: 24px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+        .category-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+        .category-icon { font-size: 2rem; }
+        .category-title { font-size: 1.4rem; font-weight: 900; }
+        .category-count {
+            background: rgba(255,255,255,0.2);
+            padding: 4px 12px;
+            border-radius: 100px;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+        .category.collapsed .ideas-list { display: none; }
+        .category.collapsed .category-header::after { content: '▶'; margin-left: auto; }
+        .category:not(.collapsed) .category-header::after { content: '▼'; margin-left: auto; opacity: 0.5; }
+
+        /* Ideas list */
+        .ideas-list { display: flex; flex-direction: column; gap: 10px; }
+        .idea {
+            background: #fff;
+            color: #333;
+            padding: 18px 20px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .idea:hover { transform: translateX(5px); }
+        .idea.done { opacity: 0.6; }
+        .idea.done .idea-text { text-decoration: line-through; }
+
+        .idea-checkbox {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 3px solid #ddd;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .idea-checkbox:hover { border-color: #55efc4; }
+        .idea.done .idea-checkbox {
+            background: #55efc4;
+            border-color: #55efc4;
+        }
+        .idea.done .idea-checkbox::after { content: '✓'; color: #fff; font-weight: 900; }
+
+        .idea-text { flex: 1; font-weight: 600; }
+        .idea-category-tag {
+            background: rgba(0,0,0,0.08);
+            padding: 4px 12px;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        /* Category colors */
+        .category[data-cat="games"] { border-left: 5px solid #ffeaa7; }
+        .category[data-cat="pranks"] { border-left: 5px solid #fd79a8; }
+        .category[data-cat="gross"] { border-left: 5px solid #81ecec; }
+        .category[data-cat="hacker"] { border-left: 5px solid #a29bfe; }
+        .category[data-cat="music"] { border-left: 5px solid #fab1a0; }
+        .category[data-cat="satisfying"] { border-left: 5px solid #55efc4; }
+        .category[data-cat="social"] { border-left: 5px solid #74b9ff; }
+        .category[data-cat="tools"] { border-left: 5px solid #ffeaa7; }
+        .category[data-cat="creative"] { border-left: 5px solid #e17055; }
+
+        /* Add idea modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal {
+            background: #fff;
+            color: #333;
+            border-radius: 24px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .modal h2 { font-size: 1.8rem; margin-bottom: 25px; }
+        .modal label { display: block; font-weight: 700; margin-bottom: 8px; }
+        .modal input, .modal select {
+            width: 100%;
+            padding: 15px;
+            border-radius: 12px;
+            border: 2px solid #ddd;
+            font-family: inherit;
+            font-size: 1rem;
+            margin-bottom: 20px;
+        }
+        .modal input:focus, .modal select:focus { outline: none; border-color: #764ba2; }
+        .modal-buttons { display: flex; gap: 15px; margin-top: 10px; }
+        .modal-btn {
+            flex: 1;
+            padding: 15px;
+            border-radius: 12px;
+            border: none;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .modal-btn.cancel { background: #ddd; color: #333; }
+        .modal-btn.submit { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; }
+        .modal-btn:hover { transform: scale(1.02); }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            opacity: 0.8;
+        }
+        .empty-state .icon { font-size: 4rem; margin-bottom: 20px; }
+
+        /* Footer */
+        footer {
+            margin-top: 50px;
+            text-align: center;
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 600px) {
+            h1 { font-size: 1.8rem; }
+            .controls { flex-direction: column; }
+            .add-btn { margin-left: 0; width: 100%; }
+            .filter-btn { font-size: 0.8rem; padding: 8px 15px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="../index.html" class="back-btn">←</a>
+            <div>
+                <h1>Idea Tracker</h1>
+                <p class="subtitle">All the cool stuff I want to build</p>
+            </div>
+        </div>
+
+        <div class="stats-bar">
+            <div class="stat-pill"><span id="total-count">0</span> ideas</div>
+            <div class="stat-pill"><span id="done-count">0</span> done</div>
+            <div class="stat-pill"><span id="todo-count">0</span> to go</div>
+        </div>
+
+        <input type="text" class="search-box" placeholder="Search ideas..." id="search-input">
+
+        <div class="controls">
+            <button class="filter-btn active" data-filter="all">All</button>
+            <button class="filter-btn" data-filter="todo">To Do</button>
+            <button class="filter-btn" data-filter="done">Done</button>
+            <button class="filter-btn add-btn" id="add-btn">+ Add Idea</button>
+        </div>
+
+        <div id="categories-container"></div>
+
+        <footer>
+            Part of <a href="../index.html" style="color:#fff">jaxmakes.games</a>
+        </footer>
+    </div>
+
+    <!-- Add Idea Modal -->
+    <div class="modal-overlay" id="modal">
+        <div class="modal">
+            <h2>Add New Idea</h2>
+            <label for="idea-text">What's the idea?</label>
+            <input type="text" id="idea-text" placeholder="e.g. A game where you throw cats at stuff">
+
+            <label for="idea-category">Category</label>
+            <select id="idea-category">
+                <option value="games">Games</option>
+                <option value="pranks">Pranks & Trolling</option>
+                <option value="gross">Gross & Weird</option>
+                <option value="hacker">Hacker Stuff</option>
+                <option value="music">Music & Sound</option>
+                <option value="satisfying">Satisfying & Addicting</option>
+                <option value="social">Social & Friends</option>
+                <option value="tools">Useful Tools</option>
+                <option value="creative">Creative & Art</option>
+            </select>
+
+            <div class="modal-buttons">
+                <button class="modal-btn cancel" id="modal-cancel">Cancel</button>
+                <button class="modal-btn submit" id="modal-submit">Add It!</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // All ideas data - parsed from markdown files
+        const ideasData = {
+            games: {
+                icon: '🎮',
+                title: 'Games',
+                ideas: [
+                    'Text adventures where YOU write the story',
+                    'Escape room you design',
+                    'Flappy bird but the bird is your face',
+                    '"Don\'t let the teacher catch you" stealth game',
+                    'Pimple popper clicker game',
+                    'Clicker game but it\'s something stupid (like slapping a fish)',
+                    'Idle game where you build something dumb (tower of cats)',
+                    'Multiplayer rock-paper-scissors with friends'
+                ]
+            },
+            pranks: {
+                icon: '😈',
+                title: 'Pranks & Trolling',
+                ideas: [
+                    'Fake "Windows Update" screen to freeze someone\'s computer',
+                    'Fake loading bar that never finishes',
+                    'Fake security camera feed',
+                    'A website that looks normal but does something weird',
+                    'A button that says "DO NOT PRESS" and gets more dramatic each time',
+                    'Website that screams when you move your mouse',
+                    '"Are you sure?" popup that spawns MORE popups',
+                    'Quiz games to prank your friends'
+                ]
+            },
+            gross: {
+                icon: '🤢',
+                title: 'Gross & Weird',
+                ideas: [
+                    'Fart soundboard with 50 different farts',
+                    'Random excuse generator for homework',
+                    '"What\'s in my sandwich?" gross ingredient mixer',
+                    'Burp-to-text translator',
+                    'Fake conspiracy theory creator',
+                    'Fortune teller with weird/ominous predictions'
+                ]
+            },
+            hacker: {
+                icon: '💻',
+                title: 'Hacker Stuff',
+                ideas: [
+                    'Terminal that "hacks" things with fake code scrolling',
+                    'Password cracker animation',
+                    '"Access Granted" simulator with voice',
+                    'Self-destruct countdown timer'
+                ]
+            },
+            music: {
+                icon: '🎵',
+                title: 'Music & Sound',
+                ideas: [
+                    'Soundboard of favorite quotes/memes',
+                    'Beat maker with weird sounds',
+                    'Remix machine that mashes up random stuff',
+                    'Voice changer/effects'
+                ]
+            },
+            satisfying: {
+                icon: '✨',
+                title: 'Satisfying & Addicting',
+                ideas: [
+                    'Screen you can shatter by clicking',
+                    'Bubble wrap popper',
+                    'Fidget toy simulator',
+                    'Confetti explosion when you finish homework'
+                ]
+            },
+            social: {
+                icon: '👥',
+                title: 'Social & Friends',
+                ideas: [
+                    '"This or That" voting app for friends',
+                    'Ranking tier list maker',
+                    'Who\'s most likely to... game',
+                    '"Would You Rather" but all horrible options',
+                    'Friendship compatibility quiz YOU design',
+                    'Insult generator that roasts your friends by name'
+                ]
+            },
+            tools: {
+                icon: '🛠️',
+                title: 'Useful Tools',
+                ideas: [
+                    'A homework tracker or countdown timer',
+                    'A personal website about YOU',
+                    'A calculator for something specific',
+                    'A "decision maker" that picks stuff for you'
+                ]
+            },
+            creative: {
+                icon: '🎨',
+                title: 'Creative & Art',
+                ideas: [
+                    'Generative art that makes random patterns',
+                    'Meme generator with your own templates',
+                    'Random insult/compliment generator'
+                ]
+            }
+        };
+
+        // State
+        let completedIdeas = JSON.parse(localStorage.getItem('jax-completed-ideas') || '[]');
+        let customIdeas = JSON.parse(localStorage.getItem('jax-custom-ideas') || '{}');
+        let currentFilter = 'all';
+        let searchTerm = '';
+
+        // Merge custom ideas into data
+        function getMergedData() {
+            const merged = JSON.parse(JSON.stringify(ideasData));
+            for (const cat in customIdeas) {
+                if (merged[cat]) {
+                    merged[cat].ideas = [...merged[cat].ideas, ...customIdeas[cat]];
+                }
+            }
+            return merged;
+        }
+
+        // Generate unique ID for an idea
+        function getIdeaId(category, ideaText) {
+            return `${category}:${ideaText}`;
+        }
+
+        // Check if idea is completed
+        function isCompleted(category, ideaText) {
+            return completedIdeas.includes(getIdeaId(category, ideaText));
+        }
+
+        // Toggle idea completion
+        function toggleIdea(category, ideaText) {
+            const id = getIdeaId(category, ideaText);
+            if (completedIdeas.includes(id)) {
+                completedIdeas = completedIdeas.filter(i => i !== id);
+            } else {
+                completedIdeas.push(id);
+            }
+            localStorage.setItem('jax-completed-ideas', JSON.stringify(completedIdeas));
+            render();
+        }
+
+        // Add new idea
+        function addIdea(category, text) {
+            if (!customIdeas[category]) customIdeas[category] = [];
+            customIdeas[category].push(text);
+            localStorage.setItem('jax-custom-ideas', JSON.stringify(customIdeas));
+            render();
+        }
+
+        // Render everything
+        function render() {
+            const container = document.getElementById('categories-container');
+            const data = getMergedData();
+
+            let totalCount = 0;
+            let doneCount = 0;
+            let html = '';
+
+            for (const cat in data) {
+                const category = data[cat];
+                const filteredIdeas = category.ideas.filter(idea => {
+                    const matchesSearch = idea.toLowerCase().includes(searchTerm.toLowerCase());
+                    const isDone = isCompleted(cat, idea);
+
+                    if (!matchesSearch) return false;
+                    if (currentFilter === 'done') return isDone;
+                    if (currentFilter === 'todo') return !isDone;
+                    return true;
+                });
+
+                if (filteredIdeas.length === 0) continue;
+
+                totalCount += category.ideas.length;
+                doneCount += category.ideas.filter(i => isCompleted(cat, i)).length;
+
+                html += `
+                    <div class="category" data-cat="${cat}">
+                        <div class="category-header" onclick="this.parentElement.classList.toggle('collapsed')">
+                            <span class="category-icon">${category.icon}</span>
+                            <span class="category-title">${category.title}</span>
+                            <span class="category-count">${filteredIdeas.length}</span>
+                        </div>
+                        <div class="ideas-list">
+                            ${filteredIdeas.map(idea => {
+                                const done = isCompleted(cat, idea);
+                                return `
+                                    <div class="idea ${done ? 'done' : ''}" onclick="toggleIdea('${cat}', '${idea.replace(/'/g, "\\'")}')">
+                                        <div class="idea-checkbox"></div>
+                                        <span class="idea-text">${idea}</span>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (html === '') {
+                html = `
+                    <div class="empty-state">
+                        <div class="icon">🔍</div>
+                        <p>No ideas found. Try a different filter or search!</p>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
+
+            // Update stats (always show full counts regardless of filter)
+            const allData = getMergedData();
+            let allTotal = 0;
+            let allDone = 0;
+            for (const cat in allData) {
+                allTotal += allData[cat].ideas.length;
+                allDone += allData[cat].ideas.filter(i => isCompleted(cat, i)).length;
+            }
+            document.getElementById('total-count').textContent = allTotal;
+            document.getElementById('done-count').textContent = allDone;
+            document.getElementById('todo-count').textContent = allTotal - allDone;
+        }
+
+        // Filter buttons
+        document.querySelectorAll('.filter-btn[data-filter]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn[data-filter]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFilter = btn.dataset.filter;
+                render();
+            });
+        });
+
+        // Search
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            searchTerm = e.target.value;
+            render();
+        });
+
+        // Modal
+        const modal = document.getElementById('modal');
+        document.getElementById('add-btn').addEventListener('click', () => {
+            modal.classList.add('open');
+            document.getElementById('idea-text').focus();
+        });
+        document.getElementById('modal-cancel').addEventListener('click', () => {
+            modal.classList.remove('open');
+        });
+        document.getElementById('modal-submit').addEventListener('click', () => {
+            const text = document.getElementById('idea-text').value.trim();
+            const category = document.getElementById('idea-category').value;
+            if (text) {
+                addIdea(category, text);
+                document.getElementById('idea-text').value = '';
+                modal.classList.remove('open');
+            }
+        });
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.classList.remove('open');
+        });
+
+        // Initial render
+        render();
+    </script>
+</body>
+</html>

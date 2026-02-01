@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bubble Wrap Popper - jax.fun</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        /* Navigation */
+        .navbar {
+            padding: 20px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .back-home {
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 700;
+            transition: all 0.2s;
+        }
+        .back-home:hover {
+            color: #fff;
+        }
+        .game-name {
+            font-size: 0.95rem;
+            font-weight: 700;
+            opacity: 0.8;
+        }
+
+        /* Main Content */
+        .game-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px 24px 60px;
+        }
+        .game-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .game-header h1 {
+            font-size: 2.5rem;
+            font-weight: 900;
+            margin-bottom: 8px;
+            text-shadow: 3px 3px 0 rgba(0,0,0,0.2);
+        }
+        .game-header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        /* Game Area */
+        .game-area {
+            background: #fff;
+            border-radius: 24px;
+            padding: 40px;
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .color-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .color-control label {
+            font-weight: 700;
+            color: #333;
+        }
+
+        .color-picker {
+            width: 60px;
+            height: 40px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        /* Stats */
+        .stats {
+            margin-bottom: 20px;
+            text-align: center;
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .stats p {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .total-counter {
+            color: #764ba2 !important;
+            font-size: 0.95rem !important;
+        }
+
+        /* 3D Canvas Container */
+        #canvas-container {
+            position: relative;
+            width: 100%;
+            height: 650px;
+            border-radius: 16px;
+            overflow: hidden;
+            background:
+                radial-gradient(circle at 50% 50%, rgba(255,255,255,0.8) 0%, rgba(245,245,248,0.95) 100%);
+            box-shadow:
+                inset 0 2px 20px rgba(0,0,0,0.05),
+                inset 0 -2px 10px rgba(0,0,0,0.03),
+                0 10px 30px rgba(0,0,0,0.15);
+            cursor: pointer;
+        }
+
+        #canvas-container canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Buttons */
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 14px 36px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #fff;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+        }
+        .btn:active {
+            transform: translateY(-1px);
+        }
+
+        @media (max-width: 768px) {
+            #canvas-container {
+                height: 550px;
+            }
+            .stats {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            #canvas-container {
+                height: 450px;
+            }
+            .game-area {
+                padding: 20px;
+            }
+            .controls {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="../../index.html" class="back-home">← Back to jax.fun</a>
+        <span class="game-name">Bubble Wrap Popper</span>
+    </nav>
+
+    <div class="game-container">
+        <div class="game-header">
+            <h1>🫧 Bubble Wrap Popper</h1>
+            <p>Pop all the bubbles for maximum satisfaction!</p>
+        </div>
+
+        <div class="game-area">
+            <div class="controls">
+                <div class="color-control">
+                    <label for="colorPicker">Bubble Color:</label>
+                    <input type="color" id="colorPicker" class="color-picker" value="#ffa3c3">
+                </div>
+                <button class="btn" id="resetBtn">Reset All Bubbles</button>
+            </div>
+
+            <div class="stats">
+                <p id="statsText">Popped: 0 / 100</p>
+                <p class="total-counter" id="totalCounter">Total Lifetime Pops: 0</p>
+            </div>
+
+            <div id="canvas-container">
+                <!-- Three.js canvas will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== SOUND EFFECTS =====
+        const popSounds = [
+            'https://cdn.freesound.org/previews/754/754232_10643461-hq.mp3',
+            'https://cdn.freesound.org/previews/754/754230_10643461-hq.mp3',
+            'https://cdn.freesound.org/previews/753/753169_10643461-hq.mp3',
+            'https://cdn.freesound.org/previews/753/753168_10643461-hq.mp3',
+            'https://cdn.freesound.org/previews/753/753167_10643461-hq.mp3'
+        ];
+
+        const audioElements = popSounds.map(url => {
+            const audio = new Audio(url);
+            audio.preload = 'auto';
+            return audio;
+        });
+
+        // ===== UI ELEMENTS =====
+        const container = document.getElementById('canvas-container');
+        const colorPicker = document.getElementById('colorPicker');
+        const resetBtn = document.getElementById('resetBtn');
+        const statsText = document.getElementById('statsText');
+        const totalCounter = document.getElementById('totalCounter');
+
+        // ===== GAME STATE =====
+        let poppedCount = 0;
+        const totalBubbles = 100;
+        let totalLifetimePops = parseInt(localStorage.getItem('totalBubblePops') || '0');
+        let currentColor = new THREE.Color(0xffa3c3);
+
+        // ===== THREE.JS SETUP =====
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xffffff);
+
+        // Orthographic camera for flat, no-perspective view
+        const frustumSize = 12;
+        const aspect = container.clientWidth / container.clientHeight;
+        const camera = new THREE.OrthographicCamera(
+            frustumSize * aspect / -2,
+            frustumSize * aspect / 2,
+            frustumSize / 2,
+            frustumSize / -2,
+            0.1,
+            1000
+        );
+        camera.position.set(0, 0, 20);
+        camera.lookAt(0, 0, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container.appendChild(renderer.domElement);
+
+        // ===== LIGHTING =====
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+        scene.add(ambientLight);
+
+        const mainLight = new THREE.DirectionalLight(0xffffff, 0.7);
+        mainLight.position.set(3, 5, 15);
+        mainLight.castShadow = true;
+        mainLight.shadow.mapSize.width = 2048;
+        mainLight.shadow.mapSize.height = 2048;
+        scene.add(mainLight);
+
+        const fillLight = new THREE.PointLight(0xffffff, 0.4);
+        fillLight.position.set(-8, -5, 10);
+        scene.add(fillLight);
+
+        const rimLight = new THREE.DirectionalLight(0xffffff, 0.3);
+        rimLight.position.set(5, -3, 8);
+        scene.add(rimLight);
+
+        // ===== BUBBLE CREATION =====
+        const bubbles = [];
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        let backingSheet = null;
+
+        function createBubbleMaterial(color) {
+            return new THREE.MeshPhysicalMaterial({
+                color: color,
+                transparent: true,
+                opacity: 0.75,
+                metalness: 0.05,
+                roughness: 0.15,
+                clearcoat: 1.0,
+                clearcoatRoughness: 0.05,
+                transmission: 0.3,
+                thickness: 0.5,
+                reflectivity: 0.8,
+                side: THREE.DoubleSide
+            });
+        }
+
+        function createBubbles() {
+            // Clear existing bubbles
+            bubbles.forEach(bubble => {
+                scene.remove(bubble.mesh);
+            });
+            bubbles.length = 0;
+            poppedCount = 0;
+
+            // Remove old backing sheet
+            if (backingSheet) {
+                scene.remove(backingSheet);
+            }
+
+            // Create solid plastic backing sheet that bubbles are attached to
+            const sheetGeometry = new THREE.PlaneGeometry(17, 17);
+            const sheetMaterial = new THREE.MeshStandardMaterial({
+                color: 0xd8d8e0,
+                transparent: false,
+                metalness: 0.05,
+                roughness: 0.4,
+                side: THREE.DoubleSide
+            });
+            backingSheet = new THREE.Mesh(sheetGeometry, sheetMaterial);
+            backingSheet.position.z = -0.5;
+            backingSheet.receiveShadow = true;
+            scene.add(backingSheet);
+
+            // Create full sphere bubbles
+            const sphereGeometry = new THREE.SphereGeometry(0.65, 32, 32);
+            const rows = 10;
+            const cols = 10;
+            const spacing = 1.5;
+            const offsetX = -(cols - 1) * spacing / 2;
+            const offsetY = (rows - 1) * spacing / 2;
+
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    const material = createBubbleMaterial(currentColor);
+                    const mesh = new THREE.Mesh(sphereGeometry, material);
+
+                    // Position bubbles in tight grid
+                    mesh.position.x = offsetX + col * spacing;
+                    mesh.position.y = offsetY - row * spacing;
+                    mesh.position.z = 0;
+
+                    // No rotation needed - hemisphere faces camera by default
+
+                    mesh.castShadow = true;
+                    mesh.receiveShadow = false;
+
+                    scene.add(mesh);
+
+                    bubbles.push({
+                        mesh: mesh,
+                        originalScale: 1,
+                        originalZ: 0,
+                        popped: false,
+                        animating: false,
+                        animationTime: 0
+                    });
+                }
+            }
+
+            updateStats();
+        }
+
+        // ===== BUBBLE POPPING =====
+        function popBubble(bubble) {
+            if (bubble.popped || bubble.animating) return;
+
+            bubble.animating = true;
+            bubble.animationTime = 0;
+
+            // Play sound
+            const randomSound = audioElements[Math.floor(Math.random() * audioElements.length)];
+            randomSound.currentTime = 0;
+            randomSound.play().catch(err => console.log('Audio play failed:', err));
+
+            // Increment counters
+            poppedCount++;
+            totalLifetimePops++;
+            localStorage.setItem('totalBubblePops', totalLifetimePops);
+
+            updateStats();
+            updateTotalCounter();
+        }
+
+        // ===== STATS UPDATE =====
+        function updateStats() {
+            statsText.textContent = `Popped: ${poppedCount} / ${totalBubbles}`;
+            if (poppedCount === totalBubbles) {
+                setTimeout(() => {
+                    statsText.textContent = '🎉 All bubbles popped! 🎉';
+                }, 500);
+            }
+        }
+
+        function updateTotalCounter() {
+            totalCounter.textContent = `Total Lifetime Pops: ${totalLifetimePops.toLocaleString()}`;
+        }
+
+        // ===== MOUSE INTERACTION =====
+        let isMouseDown = false;
+
+        function checkAndPopBubble(event) {
+            const rect = renderer.domElement.getBoundingClientRect();
+            mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+
+            const intersects = raycaster.intersectObjects(bubbles.map(b => b.mesh));
+
+            if (intersects.length > 0) {
+                const clickedMesh = intersects[0].object;
+                const bubble = bubbles.find(b => b.mesh === clickedMesh);
+                if (bubble) {
+                    popBubble(bubble);
+                }
+            }
+        }
+
+        function onMouseDown(event) {
+            isMouseDown = true;
+            checkAndPopBubble(event);
+        }
+
+        function onMouseUp() {
+            isMouseDown = false;
+        }
+
+        function onMouseMove(event) {
+            if (isMouseDown) {
+                checkAndPopBubble(event);
+            }
+        }
+
+        renderer.domElement.addEventListener('mousedown', onMouseDown);
+        renderer.domElement.addEventListener('mouseup', onMouseUp);
+        renderer.domElement.addEventListener('mousemove', onMouseMove);
+        renderer.domElement.addEventListener('mouseleave', onMouseUp);
+
+        // Touch support for mobile
+        renderer.domElement.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            isMouseDown = true;
+            const touch = e.touches[0];
+            checkAndPopBubble(touch);
+        });
+
+        renderer.domElement.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (isMouseDown) {
+                const touch = e.touches[0];
+                checkAndPopBubble(touch);
+            }
+        });
+
+        renderer.domElement.addEventListener('touchend', () => {
+            isMouseDown = false;
+        });
+
+        // ===== COLOR PICKER =====
+        colorPicker.addEventListener('input', (e) => {
+            currentColor = new THREE.Color(e.target.value);
+            bubbles.forEach(bubble => {
+                if (!bubble.popped) {
+                    bubble.mesh.material.color = currentColor.clone();
+                }
+            });
+        });
+
+        // ===== RESET BUTTON =====
+        resetBtn.addEventListener('click', () => {
+            createBubbles();
+        });
+
+        // ===== ANIMATION LOOP =====
+        function animate() {
+            requestAnimationFrame(animate);
+
+            bubbles.forEach(bubble => {
+                if (bubble.animating) {
+                    bubble.animationTime += 0.06;
+
+                    if (bubble.animationTime < 0.25) {
+                        // Expand phase - bulge toward camera
+                        const scale = 1 + bubble.animationTime * 1.2;
+                        bubble.mesh.scale.set(scale, scale, scale);
+                        bubble.mesh.position.z = bubble.originalZ + bubble.animationTime * 0.8;
+                    } else if (bubble.animationTime < 0.5) {
+                        // Pop and flatten dramatically
+                        const t = (bubble.animationTime - 0.25) / 0.25;
+                        const xyScale = 1.3 - t * 0.4;
+                        const zScale = 1.3 - t * 1.25; // Depth collapses
+                        bubble.mesh.scale.set(xyScale, xyScale, zScale);
+                        bubble.mesh.position.z = bubble.originalZ + (1 - t) * 0.2;
+                        bubble.mesh.material.opacity = 0.75 - t * 0.55;
+                    } else {
+                        // Finished - completely flat
+                        bubble.mesh.scale.set(0.9, 0.9, 0.05);
+                        bubble.mesh.position.z = bubble.originalZ - 0.35;
+                        bubble.mesh.material.color = new THREE.Color(0xd0d0d0);
+                        bubble.mesh.material.opacity = 0.2;
+                        bubble.mesh.material.metalness = 0;
+                        bubble.mesh.material.clearcoat = 0;
+                        bubble.popped = true;
+                        bubble.animating = false;
+                    }
+                }
+
+                // Very subtle breathing animation for unpopped bubbles
+                if (!bubble.popped && !bubble.animating) {
+                    const time = Date.now() * 0.0008;
+                    const offset = bubble.mesh.position.x * 0.3 + bubble.mesh.position.y * 0.2;
+                    const breathe = Math.sin(time + offset) * 0.02;
+                    bubble.mesh.scale.set(1 + breathe, 1 + breathe, 1 + breathe * 0.5);
+                }
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        // ===== WINDOW RESIZE =====
+        window.addEventListener('resize', () => {
+            const aspect = container.clientWidth / container.clientHeight;
+            camera.left = frustumSize * aspect / -2;
+            camera.right = frustumSize * aspect / 2;
+            camera.top = frustumSize / 2;
+            camera.bottom = frustumSize / -2;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        });
+
+        // ===== INITIALIZE =====
+        createBubbles();
+        updateTotalCounter();
+        animate();
+    </script>
+</body>
+</html>

@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rock Paper Scissors - jax.fun</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        /* Navigation */
+        .navbar {
+            padding: 20px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .back-home {
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 700;
+            transition: all 0.2s;
+        }
+        .back-home:hover {
+            color: #fff;
+        }
+        .game-name {
+            font-size: 0.95rem;
+            font-weight: 700;
+            opacity: 0.8;
+        }
+
+        /* Main Content */
+        .game-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px 24px 60px;
+        }
+        .game-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .game-header h1 {
+            font-size: 2.5rem;
+            font-weight: 900;
+            margin-bottom: 8px;
+            text-shadow: 3px 3px 0 rgba(0,0,0,0.2);
+        }
+        .game-header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        /* Players Online Bar */
+        .players-online {
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 50px;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+        .online-dot {
+            width: 10px;
+            height: 10px;
+            background: #4ade80;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.2); }
+        }
+
+        /* Game Area */
+        .game-area {
+            background: #fff;
+            border-radius: 24px;
+            padding: 40px;
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        /* Screens */
+        .screen { display: none; width: 100%; text-align: center; }
+        .screen.active { display: flex; flex-direction: column; align-items: center; }
+
+        /* Start Screen */
+        .mode-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 100%;
+            max-width: 280px;
+        }
+
+        /* Buttons */
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 16px 36px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #fff;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+        }
+        .btn:active {
+            transform: translateY(-1px);
+        }
+        .btn-secondary {
+            background: #f1f5f9;
+            color: #475569;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .btn-secondary:hover {
+            background: #e2e8f0;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        /* Score Display */
+        .score-display {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-bottom: 30px;
+            width: 100%;
+        }
+        .score-box {
+            text-align: center;
+        }
+        .score-label {
+            font-size: 0.9rem;
+            color: #64748b;
+            margin-bottom: 5px;
+            font-weight: 700;
+        }
+        .score-value {
+            font-size: 3rem;
+            font-weight: 900;
+            color: #334155;
+        }
+        .score-value.winner {
+            color: #22c55e;
+        }
+
+        /* Choice Buttons */
+        .choices {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .choice-btn {
+            width: 100px;
+            height: 100px;
+            border-radius: 20px;
+            border: 3px solid #e2e8f0;
+            background: #fff;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+        }
+        .choice-btn:hover {
+            border-color: #667eea;
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+        .choice-btn:active {
+            transform: scale(0.98);
+        }
+        .choice-btn.selected {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
+        }
+
+        /* Result Display */
+        .result-display {
+            margin: 20px 0;
+        }
+        .result-choices {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+        .result-choice {
+            font-size: 4rem;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 20px;
+        }
+        .vs-text {
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: #94a3b8;
+        }
+        .result-text {
+            font-size: 1.8rem;
+            font-weight: 900;
+            margin-bottom: 10px;
+        }
+        .result-text.win { color: #22c55e; }
+        .result-text.lose { color: #ef4444; }
+        .result-text.tie { color: #f59e0b; }
+
+        /* Turn Indicator */
+        .turn-indicator {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        /* Pass Screen */
+        .pass-message {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #475569;
+            margin-bottom: 20px;
+        }
+
+        /* Final Winner */
+        .winner-text {
+            font-size: 2rem;
+            font-weight: 900;
+            margin-bottom: 10px;
+        }
+        .winner-text.p1 { color: #667eea; }
+        .winner-text.p2 { color: #f59e0b; }
+
+        .confetti {
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+
+        /* Countdown Animation */
+        .countdown-screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+        .countdown-screen.active {
+            display: flex;
+        }
+        .countdown-text {
+            font-size: 3.5rem;
+            font-weight: 900;
+            color: #667eea;
+            text-transform: uppercase;
+            animation: countdownPop 0.4s ease-out;
+        }
+        .countdown-emoji {
+            font-size: 5rem;
+            margin-bottom: 20px;
+            animation: countdownBounce 0.4s ease-out;
+        }
+        .countdown-text.shoot {
+            color: #ef4444;
+            font-size: 4rem;
+        }
+        @keyframes countdownPop {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes countdownBounce {
+            0% { transform: scale(0.5) rotate(-10deg); }
+            50% { transform: scale(1.1) rotate(5deg); }
+            100% { transform: scale(1) rotate(0deg); }
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0) rotate(0); }
+            25% { transform: translateX(-5px) rotate(-5deg); }
+            75% { transform: translateX(5px) rotate(5deg); }
+        }
+        .fist-shake {
+            animation: shake 0.3s ease-in-out infinite;
+        }
+
+        /* Music Toggle Button */
+        .music-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            border: none;
+            cursor: pointer;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            z-index: 100;
+        }
+        .music-toggle:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.1);
+        }
+        .music-toggle.muted {
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="../../../index.html" class="back-home">← Back to jax.fun</a>
+        <span class="game-name">Rock Paper Scissors</span>
+    </nav>
+
+    <div class="game-container">
+        <div class="game-header">
+            <h1>Rock Paper Scissors</h1>
+            <p>First to 3 wins!</p>
+        </div>
+
+        <!-- Players Online Bar -->
+        <div class="players-online">
+            <span class="online-dot"></span>
+            <span id="players-count">1 player online</span>
+        </div>
+
+        <div class="game-area">
+            <!-- Start Screen -->
+            <div id="start-screen" class="screen active">
+                <h2 style="margin-bottom: 30px; font-size: 1.5rem; color: #475569;">Choose Game Mode</h2>
+                <div class="mode-buttons">
+                    <button class="btn" onclick="startGame('ai')">vs AI</button>
+                    <button class="btn btn-secondary" onclick="startGame('multi')">vs Player 2</button>
+                </div>
+            </div>
+
+            <!-- Game Screen (AI & Multiplayer) -->
+            <div id="game-screen" class="screen">
+                <div class="score-display">
+                    <div class="score-box">
+                        <div class="score-label" id="p1-label">YOU</div>
+                        <div class="score-value" id="p1-score">0</div>
+                    </div>
+                    <div class="score-box">
+                        <div class="score-label" id="p2-label">AI</div>
+                        <div class="score-value" id="p2-score">0</div>
+                    </div>
+                </div>
+                <div class="turn-indicator" id="turn-indicator">Make your choice!</div>
+                <div class="choices">
+                    <button class="choice-btn" onclick="makeChoice('rock')">🪨</button>
+                    <button class="choice-btn" onclick="makeChoice('paper')">📄</button>
+                    <button class="choice-btn" onclick="makeChoice('scissors')">✂️</button>
+                </div>
+            </div>
+
+            <!-- Pass Device Screen (Multiplayer Only) -->
+            <div id="pass-screen" class="screen">
+                <p class="pass-message">Pass the device to Player 2!</p>
+                <p style="color: #94a3b8; margin-bottom: 25px;">Player 1 has made their choice</p>
+                <button class="btn" onclick="showPlayer2Turn()">Ready!</button>
+            </div>
+
+            <!-- Countdown Screen -->
+            <div id="countdown-screen" class="countdown-screen">
+                <div class="countdown-emoji" id="countdown-emoji">✊</div>
+                <div class="countdown-text" id="countdown-text">ROCK</div>
+            </div>
+
+            <!-- Result Screen -->
+            <div id="result-screen" class="screen">
+                <div class="score-display">
+                    <div class="score-box">
+                        <div class="score-label" id="result-p1-label">YOU</div>
+                        <div class="score-value" id="result-p1-score">0</div>
+                    </div>
+                    <div class="score-box">
+                        <div class="score-label" id="result-p2-label">AI</div>
+                        <div class="score-value" id="result-p2-score">0</div>
+                    </div>
+                </div>
+                <div class="result-display">
+                    <div class="result-choices">
+                        <span class="result-choice" id="result-p1-choice">🪨</span>
+                        <span class="vs-text">VS</span>
+                        <span class="result-choice" id="result-p2-choice">📄</span>
+                    </div>
+                    <p class="result-text" id="round-result">You Win!</p>
+                </div>
+                <button class="btn" onclick="nextRound()">Next Round</button>
+            </div>
+
+            <!-- Game Over Screen -->
+            <div id="gameover-screen" class="screen">
+                <div class="confetti">🎉🏆🎉</div>
+                <p class="winner-text" id="winner-text">You Win!</p>
+                <div class="score-display">
+                    <div class="score-box">
+                        <div class="score-label" id="final-p1-label">YOU</div>
+                        <div class="score-value" id="final-p1-score">3</div>
+                    </div>
+                    <div class="score-box">
+                        <div class="score-label" id="final-p2-label">AI</div>
+                        <div class="score-value" id="final-p2-score">1</div>
+                    </div>
+                </div>
+                <button class="btn" onclick="resetGame()">Play Again</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Music Toggle Button -->
+    <button class="music-toggle" id="music-toggle" onclick="toggleMusic()">🔊</button>
+
+    <!-- Audio Elements -->
+    <audio id="bg-music" loop>
+        <source src="https://cdn.freesound.org/previews/724/724370_15378827-hq.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="click-sound">
+        <source src="https://cdn.freesound.org/previews/686/686542_12843138-hq.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="countdown-sound">
+        <source src="https://cdn.freesound.org/previews/698/698342_321967-hq.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="round-win-sound">
+        <source src="https://cdn.freesound.org/previews/171/171696_2514850-hq.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="round-lose-sound">
+        <source src="https://cdn.freesound.org/previews/419/419023_215268-hq.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="tie-sound">
+        <source src="https://cdn.freesound.org/previews/540/540790_11537497-hq.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="victory-sound">
+        <source src="https://cdn.freesound.org/previews/580/580310_11785387-hq.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="lose-sound">
+        <source src="https://cdn.freesound.org/previews/350/350980_5450487-hq.mp3" type="audio/mpeg">
+    </audio>
+
+    <script>
+        // Game State
+        let gameMode = 'ai'; // 'ai' or 'multi'
+        let scores = { p1: 0, p2: 0 };
+        let p1Choice = null;
+        let currentTurn = 1; // For multiplayer
+        let musicEnabled = true;
+
+        const choices = ['rock', 'paper', 'scissors'];
+        const choiceEmojis = { rock: '🪨', paper: '📄', scissors: '✂️' };
+
+        // Audio elements
+        const bgMusic = document.getElementById('bg-music');
+        const clickSound = document.getElementById('click-sound');
+        const countdownSound = document.getElementById('countdown-sound');
+        const roundWinSound = document.getElementById('round-win-sound');
+        const roundLoseSound = document.getElementById('round-lose-sound');
+        const tieSound = document.getElementById('tie-sound');
+        const victorySound = document.getElementById('victory-sound');
+        const loseSound = document.getElementById('lose-sound');
+
+        // Set volumes
+        bgMusic.volume = 0.4;
+        clickSound.volume = 0.5;
+        countdownSound.volume = 0.7;
+        roundWinSound.volume = 0.5;
+        roundLoseSound.volume = 0.4;
+        tieSound.volume = 0.5;
+        victorySound.volume = 0.7;
+        loseSound.volume = 0.7;
+
+        // Music toggle
+        function toggleMusic() {
+            musicEnabled = !musicEnabled;
+            const btn = document.getElementById('music-toggle');
+            if (musicEnabled) {
+                btn.textContent = '🔊';
+                btn.classList.remove('muted');
+                if (document.getElementById('game-screen').classList.contains('active') ||
+                    document.getElementById('countdown-screen').classList.contains('active')) {
+                    bgMusic.play();
+                }
+            } else {
+                btn.textContent = '🔇';
+                btn.classList.add('muted');
+                bgMusic.pause();
+            }
+        }
+
+        // Play click sound
+        function playClick() {
+            if (musicEnabled) {
+                clickSound.currentTime = 0;
+                clickSound.play();
+            }
+        }
+
+        // Play countdown swoosh sound
+        function playCountdownSound() {
+            if (musicEnabled) {
+                countdownSound.currentTime = 0;
+                countdownSound.play();
+            }
+        }
+
+        // Play round win sound (small win)
+        function playRoundWin() {
+            if (musicEnabled) {
+                roundWinSound.currentTime = 0;
+                roundWinSound.play();
+            }
+        }
+
+        // Play round lose sound (small lose)
+        function playRoundLose() {
+            if (musicEnabled) {
+                roundLoseSound.currentTime = 0;
+                roundLoseSound.play();
+            }
+        }
+
+        // Play tie sound (confused boing)
+        function playTie() {
+            if (musicEnabled) {
+                tieSound.currentTime = 0;
+                tieSound.play();
+            }
+        }
+
+        // Play victory sound
+        function playVictory() {
+            if (musicEnabled) {
+                bgMusic.pause();
+                victorySound.currentTime = 0;
+                victorySound.play();
+            }
+        }
+
+        // Play lose sound
+        function playLose() {
+            if (musicEnabled) {
+                bgMusic.pause();
+                loseSound.currentTime = 0;
+                loseSound.play();
+            }
+        }
+
+        // Start background music
+        function startMusic() {
+            if (musicEnabled) {
+                bgMusic.currentTime = 0;
+                bgMusic.play().catch(() => {
+                    // Autoplay blocked - that's ok, music will start on next interaction
+                });
+            }
+        }
+
+        // Stop background music
+        function stopMusic() {
+            bgMusic.pause();
+            bgMusic.currentTime = 0;
+        }
+
+        // Simulate players online (for fun!)
+        function updatePlayersOnline() {
+            const baseCount = 1;
+            const randomExtra = Math.floor(Math.random() * 5);
+            const total = baseCount + randomExtra;
+            document.getElementById('players-count').textContent =
+                total === 1 ? '1 player online' : `${total} players online`;
+        }
+        updatePlayersOnline();
+        setInterval(updatePlayersOnline, 10000);
+
+        // Screen Management
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        // Start Game
+        function startGame(mode) {
+            gameMode = mode;
+            scores = { p1: 0, p2: 0 };
+            p1Choice = null;
+            currentTurn = 1;
+
+            // Update labels based on mode
+            const p1Label = mode === 'ai' ? 'YOU' : 'P1';
+            const p2Label = mode === 'ai' ? 'AI' : 'P2';
+
+            document.getElementById('p1-label').textContent = p1Label;
+            document.getElementById('p2-label').textContent = p2Label;
+            document.getElementById('result-p1-label').textContent = p1Label;
+            document.getElementById('result-p2-label').textContent = p2Label;
+            document.getElementById('final-p1-label').textContent = p1Label;
+            document.getElementById('final-p2-label').textContent = p2Label;
+
+            updateScoreDisplay();
+            updateTurnIndicator();
+            showScreen('game-screen');
+            startMusic();
+        }
+
+        // Update Score Display
+        function updateScoreDisplay() {
+            document.getElementById('p1-score').textContent = scores.p1;
+            document.getElementById('p2-score').textContent = scores.p2;
+            document.getElementById('result-p1-score').textContent = scores.p1;
+            document.getElementById('result-p2-score').textContent = scores.p2;
+        }
+
+        // Update Turn Indicator
+        function updateTurnIndicator() {
+            const indicator = document.getElementById('turn-indicator');
+            if (gameMode === 'ai') {
+                indicator.textContent = 'Make your choice!';
+            } else {
+                indicator.textContent = currentTurn === 1 ? 'Player 1 - Make your choice!' : 'Player 2 - Make your choice!';
+            }
+        }
+
+        // Make Choice
+        function makeChoice(choice) {
+            playClick(); // Play click sound
+            if (gameMode === 'ai') {
+                // AI Mode - show countdown then resolve
+                const aiChoice = choices[Math.floor(Math.random() * 3)];
+                playCountdown(() => resolveRound(choice, aiChoice));
+            } else {
+                // Multiplayer Mode
+                if (currentTurn === 1) {
+                    p1Choice = choice;
+                    showScreen('pass-screen');
+                } else {
+                    // Player 2 made choice - show countdown then resolve
+                    playCountdown(() => resolveRound(p1Choice, choice));
+                }
+            }
+        }
+
+        // Countdown Animation
+        function playCountdown(callback) {
+            const countdownSteps = [
+                { text: 'ROCK', emoji: '✊' },
+                { text: 'PAPER', emoji: '✋' },
+                { text: 'SCISSORS', emoji: '✌️' },
+                { text: 'SHOOT!', emoji: '💥', isShoot: true }
+            ];
+
+            let stepIndex = 0;
+            const countdownScreen = document.getElementById('countdown-screen');
+            const countdownText = document.getElementById('countdown-text');
+            const countdownEmoji = document.getElementById('countdown-emoji');
+
+            // Hide all screens and show countdown
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            countdownScreen.classList.add('active');
+
+            function showStep() {
+                if (stepIndex < countdownSteps.length) {
+                    const step = countdownSteps[stepIndex];
+                    countdownText.textContent = step.text;
+                    countdownEmoji.textContent = step.emoji;
+
+                    // Play swoosh sound for each step
+                    playCountdownSound();
+
+                    // Add shake animation to fist for first 3 steps
+                    if (!step.isShoot) {
+                        countdownEmoji.classList.add('fist-shake');
+                    } else {
+                        countdownEmoji.classList.remove('fist-shake');
+                    }
+
+                    // Add shoot class for the final step
+                    if (step.isShoot) {
+                        countdownText.classList.add('shoot');
+                    } else {
+                        countdownText.classList.remove('shoot');
+                    }
+
+                    // Re-trigger animation
+                    countdownText.style.animation = 'none';
+                    countdownEmoji.style.animation = 'none';
+                    countdownText.offsetHeight; // Trigger reflow
+                    countdownEmoji.offsetHeight;
+                    countdownText.style.animation = '';
+                    countdownEmoji.style.animation = '';
+
+                    stepIndex++;
+                    setTimeout(showStep, 500);
+                } else {
+                    // Countdown finished, run callback
+                    countdownScreen.classList.remove('active');
+                    countdownEmoji.classList.remove('fist-shake');
+                    callback();
+                }
+            }
+
+            showStep();
+        }
+
+        // Show Player 2 Turn
+        function showPlayer2Turn() {
+            currentTurn = 2;
+            updateTurnIndicator();
+            showScreen('game-screen');
+        }
+
+        // Resolve Round
+        function resolveRound(choice1, choice2) {
+            // Show choices
+            document.getElementById('result-p1-choice').textContent = choiceEmojis[choice1];
+            document.getElementById('result-p2-choice').textContent = choiceEmojis[choice2];
+
+            // Determine winner
+            let result;
+            const resultText = document.getElementById('round-result');
+
+            if (choice1 === choice2) {
+                result = 'tie';
+                resultText.textContent = "It's a Tie!";
+                resultText.className = 'result-text tie';
+                if (gameMode === 'ai') playTie(); // Confused boing sound
+            } else if (
+                (choice1 === 'rock' && choice2 === 'scissors') ||
+                (choice1 === 'paper' && choice2 === 'rock') ||
+                (choice1 === 'scissors' && choice2 === 'paper')
+            ) {
+                result = 'p1';
+                scores.p1++;
+                if (gameMode === 'ai') {
+                    resultText.textContent = 'You Win!';
+                    playRoundWin(); // Small win sound
+                } else {
+                    resultText.textContent = 'Player 1 Wins!';
+                }
+                resultText.className = 'result-text win';
+            } else {
+                result = 'p2';
+                scores.p2++;
+                if (gameMode === 'ai') {
+                    resultText.textContent = 'AI Wins!';
+                    playRoundLose(); // Small lose buzzer
+                } else {
+                    resultText.textContent = 'Player 2 Wins!';
+                }
+                resultText.className = 'result-text lose';
+            }
+
+            updateScoreDisplay();
+
+            // Check for game over
+            if (scores.p1 >= 3 || scores.p2 >= 3) {
+                setTimeout(() => showGameOver(), 100);
+            } else {
+                showScreen('result-screen');
+            }
+        }
+
+        // Next Round
+        function nextRound() {
+            p1Choice = null;
+            currentTurn = 1;
+            updateTurnIndicator();
+            showScreen('game-screen');
+        }
+
+        // Show Game Over
+        function showGameOver() {
+            const winnerText = document.getElementById('winner-text');
+            document.getElementById('final-p1-score').textContent = scores.p1;
+            document.getElementById('final-p2-score').textContent = scores.p2;
+
+            if (scores.p1 >= 3) {
+                if (gameMode === 'ai') {
+                    winnerText.textContent = 'You Win!';
+                    playVictory(); // Player won!
+                } else {
+                    winnerText.textContent = 'Player 1 Wins!';
+                    playVictory();
+                }
+                winnerText.className = 'winner-text p1';
+            } else {
+                if (gameMode === 'ai') {
+                    winnerText.textContent = 'AI Wins!';
+                    playLose(); // Player lost
+                } else {
+                    winnerText.textContent = 'Player 2 Wins!';
+                    playVictory(); // Someone still won!
+                }
+                winnerText.className = 'winner-text p2';
+            }
+
+            showScreen('gameover-screen');
+        }
+
+        // Reset Game
+        function resetGame() {
+            scores = { p1: 0, p2: 0 };
+            p1Choice = null;
+            currentTurn = 1;
+            stopMusic();
+            showScreen('start-screen');
+        }
+    </script>
+</body>
+</html>

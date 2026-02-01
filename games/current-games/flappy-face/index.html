@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flappy Face - jax.fun</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+            min-height: 100vh;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        /* Navigation */
+        .navbar {
+            padding: 20px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+        }
+        .back-home {
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 700;
+            transition: all 0.2s;
+        }
+        .back-home:hover {
+            color: #fff;
+        }
+        .game-name {
+            font-size: 0.95rem;
+            font-weight: 700;
+            opacity: 0.8;
+        }
+
+        /* Screens */
+        .screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 80px 24px 40px;
+        }
+        .screen.active {
+            display: flex;
+        }
+
+        /* Setup Screen */
+        .setup-title {
+            font-size: 2.5rem;
+            font-weight: 900;
+            text-shadow: 3px 3px 0 rgba(0,0,0,0.2);
+            margin-bottom: 10px;
+        }
+        .setup-subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 30px;
+        }
+
+        .camera-container {
+            position: relative;
+            width: 320px;
+            height: 320px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 6px solid #fff;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            margin-bottom: 30px;
+            background: #000;
+        }
+        #camera-feed {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+        }
+        .camera-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border: 4px dashed rgba(255,255,255,0.5);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn {
+            background: #fff;
+            border: none;
+            padding: 16px 36px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #0984e3;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+        .btn:active {
+            transform: translateY(-1px);
+        }
+        .btn-secondary {
+            background: rgba(255,255,255,0.2);
+            color: #fff;
+        }
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        /* Crop Screen */
+        .crop-container {
+            position: relative;
+            width: 350px;
+            height: 350px;
+            background: #000;
+            border-radius: 20px;
+            overflow: hidden;
+            margin-bottom: 30px;
+            touch-action: none;
+        }
+        #crop-image {
+            position: absolute;
+            transform-origin: 0 0;
+            cursor: move;
+        }
+        .crop-circle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 200px;
+            border: 4px solid #fff;
+            border-radius: 50%;
+            pointer-events: none;
+            box-shadow: 0 0 0 1000px rgba(0,0,0,0.6);
+        }
+        .crop-instructions {
+            font-size: 0.95rem;
+            opacity: 0.8;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        /* Zoom slider */
+        .zoom-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            background: rgba(0,0,0,0.2);
+            padding: 15px 25px;
+            border-radius: 50px;
+        }
+        .zoom-label {
+            font-size: 1.5rem;
+        }
+        #zoom-slider {
+            width: 200px;
+            height: 8px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: rgba(255,255,255,0.3);
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #zoom-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            background: #fff;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        /* Game Screen */
+        #game-canvas {
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+
+        .game-ui {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            z-index: 10;
+        }
+        .score {
+            font-size: 4rem;
+            font-weight: 900;
+            text-shadow: 3px 3px 0 rgba(0,0,0,0.3);
+        }
+        .high-score {
+            font-size: 1rem;
+            opacity: 0.8;
+        }
+
+        /* Game Over Overlay */
+        .game-over-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 50;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .game-over-overlay.active {
+            display: flex;
+        }
+        .game-over-title {
+            font-size: 3rem;
+            font-weight: 900;
+            margin-bottom: 20px;
+            text-shadow: 3px 3px 0 rgba(0,0,0,0.3);
+        }
+        .final-score {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+        .new-high-score {
+            color: #ffeaa7;
+            font-weight: 700;
+            margin-bottom: 30px;
+        }
+
+        /* Start overlay */
+        .start-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 40;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .start-overlay.hidden {
+            display: none;
+        }
+        .tap-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            animation: pulse 1s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(0.95); }
+        }
+
+        /* Preview face */
+        .face-preview {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 4px solid #fff;
+            margin-bottom: 15px;
+            object-fit: cover;
+        }
+
+        /* Default bird preview */
+        .bird-preview {
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+        .bird-preview svg {
+            width: 70px;
+            height: 70px;
+            filter: drop-shadow(2px 2px 0 rgba(0,0,0,0.3));
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="../../../index.html" class="back-home">← Back to jax.fun</a>
+        <span class="game-name">Flappy Face</span>
+    </nav>
+
+    <!-- Setup Screen -->
+    <div id="setup-screen" class="screen active">
+        <h1 class="setup-title">Flappy Face</h1>
+        <p class="setup-subtitle">Put YOUR face on the bird!</p>
+
+        <div class="camera-container">
+            <video id="camera-feed" autoplay playsinline></video>
+            <div class="camera-overlay"></div>
+        </div>
+
+        <div class="btn-group">
+            <button id="capture-btn" class="btn">📸 Take Photo</button>
+            <button id="skip-btn" class="btn btn-secondary">Skip (Use Bird)</button>
+        </div>
+    </div>
+
+    <!-- Crop Screen -->
+    <div id="crop-screen" class="screen">
+        <h1 class="setup-title">Crop Your Face</h1>
+        <p class="crop-instructions">Drag to position • Use slider to zoom</p>
+
+        <div class="crop-container" id="crop-container">
+            <img id="crop-image" src="" alt="Crop">
+            <div class="crop-circle"></div>
+        </div>
+
+        <div class="zoom-container">
+            <span class="zoom-label">🔍</span>
+            <input type="range" id="zoom-slider" min="0.5" max="3" step="0.1" value="1">
+        </div>
+
+        <div class="btn-group">
+            <button id="confirm-crop-btn" class="btn">✓ Use This</button>
+            <button id="retake-btn" class="btn btn-secondary">Retake</button>
+        </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game-screen" class="screen">
+        <div class="game-ui">
+            <div class="score" id="score">0</div>
+            <div class="high-score">Best: <span id="high-score">0</span></div>
+        </div>
+
+        <canvas id="game-canvas" width="400" height="600"></canvas>
+
+        <div class="start-overlay" id="start-overlay">
+            <div id="player-preview"></div>
+            <div class="tap-text">Tap or Press Space to Start!</div>
+        </div>
+    </div>
+
+    <!-- Game Over Overlay -->
+    <div class="game-over-overlay" id="game-over">
+        <div class="game-over-title">Game Over!</div>
+        <div class="final-score">Score: <span id="final-score">0</span></div>
+        <div class="new-high-score" id="new-high-score" style="display: none;">New High Score!</div>
+        <div class="btn-group">
+            <button id="play-again-btn" class="btn">Play Again</button>
+            <button id="change-face-btn" class="btn btn-secondary">Change Face</button>
+        </div>
+    </div>
+
+    <script>
+        // Sound effects (from Freesound.org)
+        const jumpSound = new Audio('https://cdn.freesound.org/previews/649/649725_14130375-hq.mp3');
+        const deathSound = new Audio('https://cdn.freesound.org/previews/350/350980_5450487-hq.mp3');
+        const bgMusic = new Audio('https://cdn.freesound.org/previews/613/613965_10182789-hq.mp3');
+        const menuMusic = new Audio('https://cdn.freesound.org/previews/583/583203_1015240-hq.mp3');
+        jumpSound.volume = 0.5;
+        deathSound.volume = 0.6;
+        bgMusic.volume = 0.3;
+        bgMusic.loop = true;
+        menuMusic.volume = 0.35;
+        menuMusic.loop = true;
+
+        // Game state
+        let playerFaceImage = null;
+        let useDefaultBird = false;
+        let highScore = parseInt(localStorage.getItem('flappyFaceHighScore')) || 0;
+
+        // Camera & Cropping
+        let stream = null;
+        let capturedImage = null;
+        let cropState = { x: 0, y: 0, scale: 1 };
+
+        // DOM Elements
+        const setupScreen = document.getElementById('setup-screen');
+        const cropScreen = document.getElementById('crop-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const cameraFeed = document.getElementById('camera-feed');
+        const captureBtn = document.getElementById('capture-btn');
+        const skipBtn = document.getElementById('skip-btn');
+        const cropImage = document.getElementById('crop-image');
+        const cropContainer = document.getElementById('crop-container');
+        const zoomSlider = document.getElementById('zoom-slider');
+        const confirmCropBtn = document.getElementById('confirm-crop-btn');
+        const retakeBtn = document.getElementById('retake-btn');
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('score');
+        const highScoreDisplay = document.getElementById('high-score');
+        const startOverlay = document.getElementById('start-overlay');
+        const gameOverOverlay = document.getElementById('game-over');
+        const finalScoreDisplay = document.getElementById('final-score');
+        const newHighScoreText = document.getElementById('new-high-score');
+        const playerPreview = document.getElementById('player-preview');
+
+        highScoreDisplay.textContent = highScore;
+
+        // Start menu music on first interaction
+        let menuMusicStarted = false;
+        function tryPlayMenuMusic() {
+            if (!menuMusicStarted) {
+                menuMusic.currentTime = 0;
+                menuMusic.play().catch(() => {});
+                menuMusicStarted = true;
+            }
+        }
+        // Listen for any click/touch on setup screen to start music
+        setupScreen.addEventListener('click', tryPlayMenuMusic);
+        setupScreen.addEventListener('touchstart', tryPlayMenuMusic);
+
+        // Initialize camera
+        async function startCamera() {
+            menuMusicStarted = false; // Reset so music can play when returning
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'user', width: 640, height: 640 }
+                });
+                cameraFeed.srcObject = stream;
+            } catch (err) {
+                console.error('Camera error:', err);
+                alert('Could not access camera. You can still play with the default bird!');
+            }
+        }
+
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+        }
+
+        // Show screen helper
+        function showScreen(screen) {
+            [setupScreen, cropScreen, gameScreen].forEach(s => s.classList.remove('active'));
+            screen.classList.add('active');
+        }
+
+        // Capture photo
+        captureBtn.addEventListener('click', () => {
+            tryPlayMenuMusic(); // Start music on first interaction
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = cameraFeed.videoWidth;
+            tempCanvas.height = cameraFeed.videoHeight;
+            const tempCtx = tempCanvas.getContext('2d');
+
+            // Mirror the image
+            tempCtx.translate(tempCanvas.width, 0);
+            tempCtx.scale(-1, 1);
+            tempCtx.drawImage(cameraFeed, 0, 0);
+
+            capturedImage = tempCanvas.toDataURL('image/png');
+            cropImage.src = capturedImage;
+
+            cropImage.onload = () => {
+                // Reset crop state
+                cropState = { x: 0, y: 0, scale: 1 };
+                zoomSlider.value = 1;
+                updateCropImage();
+                showScreen(cropScreen);
+            };
+        });
+
+        // Skip to default bird
+        skipBtn.addEventListener('click', () => {
+            tryPlayMenuMusic(); // In case this is first interaction
+            stopCamera();
+            menuMusic.pause();
+            useDefaultBird = true;
+            playerFaceImage = null;
+            showPlayerPreview();
+            showScreen(gameScreen);
+            initGame();
+        });
+
+        // Crop image dragging
+        let isDragging = false;
+        let dragStart = { x: 0, y: 0 };
+
+        function updateCropImage() {
+            const containerW = cropContainer.clientWidth;
+            const containerH = cropContainer.clientHeight;
+            const imgW = cropImage.naturalWidth * cropState.scale;
+            const imgH = cropImage.naturalHeight * cropState.scale;
+
+            cropImage.style.width = imgW + 'px';
+            cropImage.style.height = imgH + 'px';
+            cropImage.style.left = cropState.x + 'px';
+            cropImage.style.top = cropState.y + 'px';
+        }
+
+        cropContainer.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            dragStart = { x: e.clientX - cropState.x, y: e.clientY - cropState.y };
+        });
+
+        cropContainer.addEventListener('touchstart', (e) => {
+            isDragging = true;
+            const touch = e.touches[0];
+            dragStart = { x: touch.clientX - cropState.x, y: touch.clientY - cropState.y };
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            cropState.x = e.clientX - dragStart.x;
+            cropState.y = e.clientY - dragStart.y;
+            updateCropImage();
+        });
+
+        document.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            const touch = e.touches[0];
+            cropState.x = touch.clientX - dragStart.x;
+            cropState.y = touch.clientY - dragStart.y;
+            updateCropImage();
+        });
+
+        document.addEventListener('mouseup', () => isDragging = false);
+        document.addEventListener('touchend', () => isDragging = false);
+
+        zoomSlider.addEventListener('input', () => {
+            cropState.scale = parseFloat(zoomSlider.value);
+            updateCropImage();
+        });
+
+        // Confirm crop
+        confirmCropBtn.addEventListener('click', () => {
+            // Create cropped circular image
+            const size = 200;
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = size;
+            tempCanvas.height = size;
+            const tempCtx = tempCanvas.getContext('2d');
+
+            // Calculate crop area
+            const containerRect = cropContainer.getBoundingClientRect();
+            const cropCircle = cropContainer.querySelector('.crop-circle');
+            const circleRect = cropCircle.getBoundingClientRect();
+
+            const sourceX = (circleRect.left - containerRect.left - cropState.x) / cropState.scale;
+            const sourceY = (circleRect.top - containerRect.top - cropState.y) / cropState.scale;
+            const sourceSize = 200 / cropState.scale;
+
+            // Draw circular crop
+            tempCtx.beginPath();
+            tempCtx.arc(size/2, size/2, size/2, 0, Math.PI * 2);
+            tempCtx.closePath();
+            tempCtx.clip();
+
+            const img = new Image();
+            img.onload = () => {
+                tempCtx.drawImage(img, sourceX, sourceY, sourceSize, sourceSize, 0, 0, size, size);
+                playerFaceImage = new Image();
+                playerFaceImage.src = tempCanvas.toDataURL('image/png');
+                useDefaultBird = false;
+
+                stopCamera();
+                menuMusic.pause();
+                showPlayerPreview();
+                showScreen(gameScreen);
+                initGame();
+            };
+            img.src = capturedImage;
+        });
+
+        // Retake photo
+        retakeBtn.addEventListener('click', () => {
+            showScreen(setupScreen);
+        });
+
+        // Show player preview
+        function showPlayerPreview() {
+            if (useDefaultBird) {
+                playerPreview.innerHTML = `
+                    <div class="bird-preview">
+                        <svg viewBox="0 0 50 50">
+                            <ellipse cx="25" cy="25" rx="22" ry="18" fill="#f1c40f"/>
+                            <ellipse cx="25" cy="25" rx="18" ry="14" fill="#f39c12"/>
+                            <circle cx="35" cy="20" r="6" fill="#fff"/>
+                            <circle cx="37" cy="20" r="3" fill="#000"/>
+                            <path d="M 45 22 L 55 25 L 45 28 Z" fill="#e74c3c"/>
+                            <ellipse cx="12" cy="25" rx="8" ry="5" fill="#f39c12"/>
+                        </svg>
+                    </div>
+                `;
+            } else if (playerFaceImage) {
+                playerPreview.innerHTML = `<img src="${playerFaceImage.src}" class="face-preview" alt="Your face">`;
+            }
+        }
+
+        // ============ GAME LOGIC ============
+        let bird, pipes, score, gameStarted, gameOver, animationId;
+        const gravity = 0.4;
+        const jumpForce = -7;
+        const pipeGap = 180;
+        const pipeWidth = 70;
+        const pipeSpeed = 3;
+
+        function initGame() {
+            bird = {
+                x: 100,
+                y: canvas.height / 2,
+                velocity: 0,
+                size: 45
+            };
+            pipes = [];
+            score = 0;
+            gameStarted = false;
+            gameOver = false;
+            scoreDisplay.textContent = '0';
+            startOverlay.classList.remove('hidden');
+            gameOverOverlay.classList.remove('active');
+
+            draw();
+        }
+
+        function startGame() {
+            if (gameStarted) return;
+            gameStarted = true;
+            startOverlay.classList.add('hidden');
+            // Start background music
+            bgMusic.currentTime = 0;
+            bgMusic.play().catch(() => {});
+            spawnPipe();
+            gameLoop();
+        }
+
+        function jump() {
+            if (!gameStarted) {
+                startGame();
+                return;
+            }
+            if (gameOver) return;
+            bird.velocity = jumpForce;
+            // Play jump sound
+            jumpSound.currentTime = 0;
+            jumpSound.play().catch(() => {});
+        }
+
+        function spawnPipe() {
+            const minY = 100;
+            const maxY = canvas.height - pipeGap - 100;
+            const gapY = Math.random() * (maxY - minY) + minY;
+
+            pipes.push({
+                x: canvas.width,
+                gapY: gapY,
+                scored: false
+            });
+        }
+
+        function update() {
+            // Bird physics
+            bird.velocity += gravity;
+            bird.y += bird.velocity;
+
+            // Pipe movement
+            for (let i = pipes.length - 1; i >= 0; i--) {
+                pipes[i].x -= pipeSpeed;
+
+                // Score
+                if (!pipes[i].scored && pipes[i].x + pipeWidth < bird.x) {
+                    pipes[i].scored = true;
+                    score++;
+                    scoreDisplay.textContent = score;
+                }
+
+                // Remove off-screen pipes
+                if (pipes[i].x + pipeWidth < 0) {
+                    pipes.splice(i, 1);
+                }
+            }
+
+            // Spawn new pipes
+            if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 250) {
+                spawnPipe();
+            }
+
+            // Collision detection
+            checkCollision();
+        }
+
+        function checkCollision() {
+            // Ground/ceiling collision
+            if (bird.y - bird.size/2 < 0 || bird.y + bird.size/2 > canvas.height) {
+                endGame();
+                return;
+            }
+
+            // Pipe collision
+            for (const pipe of pipes) {
+                if (bird.x + bird.size/2 > pipe.x && bird.x - bird.size/2 < pipe.x + pipeWidth) {
+                    if (bird.y - bird.size/2 < pipe.gapY || bird.y + bird.size/2 > pipe.gapY + pipeGap) {
+                        endGame();
+                        return;
+                    }
+                }
+            }
+        }
+
+        function endGame() {
+            gameOver = true;
+            cancelAnimationFrame(animationId);
+            // Stop music and play death sound
+            bgMusic.pause();
+            deathSound.currentTime = 0;
+            deathSound.play().catch(() => {});
+
+            finalScoreDisplay.textContent = score;
+
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('flappyFaceHighScore', highScore);
+                highScoreDisplay.textContent = highScore;
+                newHighScoreText.style.display = 'block';
+            } else {
+                newHighScoreText.style.display = 'none';
+            }
+
+            gameOverOverlay.classList.add('active');
+        }
+
+        function draw() {
+            // Sky gradient
+            const skyGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            skyGradient.addColorStop(0, '#74b9ff');
+            skyGradient.addColorStop(1, '#0984e3');
+            ctx.fillStyle = skyGradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Clouds
+            ctx.fillStyle = 'rgba(255,255,255,0.5)';
+            drawCloud(50, 80, 60);
+            drawCloud(200, 150, 45);
+            drawCloud(320, 60, 50);
+            drawCloud(100, 400, 55);
+            drawCloud(280, 480, 40);
+
+            // Ground
+            ctx.fillStyle = '#27ae60';
+            ctx.fillRect(0, canvas.height - 20, canvas.width, 20);
+            ctx.fillStyle = '#2ecc71';
+            ctx.fillRect(0, canvas.height - 25, canvas.width, 5);
+
+            // Pipes
+            for (const pipe of pipes) {
+                drawPipe(pipe);
+            }
+
+            // Bird/Face
+            drawBird();
+        }
+
+        function drawCloud(x, y, size) {
+            ctx.beginPath();
+            ctx.arc(x, y, size * 0.5, 0, Math.PI * 2);
+            ctx.arc(x + size * 0.4, y - size * 0.1, size * 0.4, 0, Math.PI * 2);
+            ctx.arc(x + size * 0.8, y, size * 0.45, 0, Math.PI * 2);
+            ctx.arc(x + size * 0.4, y + size * 0.2, size * 0.35, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawPipe(pipe) {
+            // Pipe gradient
+            const pipeGradient = ctx.createLinearGradient(pipe.x, 0, pipe.x + pipeWidth, 0);
+            pipeGradient.addColorStop(0, '#27ae60');
+            pipeGradient.addColorStop(0.5, '#2ecc71');
+            pipeGradient.addColorStop(1, '#27ae60');
+
+            ctx.fillStyle = pipeGradient;
+
+            // Top pipe
+            ctx.fillRect(pipe.x, 0, pipeWidth, pipe.gapY);
+            // Top pipe cap
+            ctx.fillRect(pipe.x - 5, pipe.gapY - 30, pipeWidth + 10, 30);
+
+            // Bottom pipe
+            ctx.fillRect(pipe.x, pipe.gapY + pipeGap, pipeWidth, canvas.height - pipe.gapY - pipeGap);
+            // Bottom pipe cap
+            ctx.fillRect(pipe.x - 5, pipe.gapY + pipeGap, pipeWidth + 10, 30);
+
+            // Highlights
+            ctx.fillStyle = 'rgba(255,255,255,0.2)';
+            ctx.fillRect(pipe.x + 5, 0, 10, pipe.gapY - 30);
+            ctx.fillRect(pipe.x + 5, pipe.gapY + pipeGap + 30, 10, canvas.height);
+        }
+
+        function drawBird() {
+            ctx.save();
+            ctx.translate(bird.x, bird.y);
+
+            // Rotation based on velocity
+            const rotation = Math.min(Math.max(bird.velocity * 3, -30), 45) * Math.PI / 180;
+            ctx.rotate(rotation);
+
+            if (useDefaultBird) {
+                // Draw default Flappy Bird
+                const size = bird.size;
+
+                // Body
+                ctx.fillStyle = '#f1c40f';
+                ctx.beginPath();
+                ctx.ellipse(0, 0, size * 0.9, size * 0.7, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Inner body
+                ctx.fillStyle = '#f39c12';
+                ctx.beginPath();
+                ctx.ellipse(0, 0, size * 0.7, size * 0.55, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Wing
+                ctx.fillStyle = '#e67e22';
+                ctx.beginPath();
+                ctx.ellipse(-size * 0.3, size * 0.1, size * 0.35, size * 0.2, -0.3, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Eye white
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.arc(size * 0.25, -size * 0.15, size * 0.25, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Eye pupil
+                ctx.fillStyle = '#000';
+                ctx.beginPath();
+                ctx.arc(size * 0.32, -size * 0.15, size * 0.12, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Beak
+                ctx.fillStyle = '#e74c3c';
+                ctx.beginPath();
+                ctx.moveTo(size * 0.5, -size * 0.05);
+                ctx.lineTo(size * 0.9, size * 0.05);
+                ctx.lineTo(size * 0.5, size * 0.15);
+                ctx.closePath();
+                ctx.fill();
+            } else if (playerFaceImage) {
+                // Draw player's face
+                ctx.beginPath();
+                ctx.arc(0, 0, bird.size/2, 0, Math.PI * 2);
+                ctx.closePath();
+                ctx.clip();
+                ctx.drawImage(playerFaceImage, -bird.size/2, -bird.size/2, bird.size, bird.size);
+            }
+
+            ctx.restore();
+        }
+
+        function gameLoop() {
+            if (gameOver) return;
+
+            update();
+            draw();
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        // Controls
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' || e.key === ' ') {
+                e.preventDefault();
+                jump();
+            }
+        });
+
+        canvas.addEventListener('click', jump);
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            jump();
+        });
+
+        startOverlay.addEventListener('click', jump);
+        startOverlay.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            jump();
+        });
+
+        // Game over buttons
+        document.getElementById('play-again-btn').addEventListener('click', () => {
+            initGame();
+        });
+
+        document.getElementById('change-face-btn').addEventListener('click', () => {
+            showScreen(setupScreen);
+            startCamera();
+            // Restart menu music
+            menuMusic.currentTime = 0;
+            menuMusic.play().catch(() => {});
+        });
+
+        // Start
+        startCamera();
+    </script>
+</body>
+</html>

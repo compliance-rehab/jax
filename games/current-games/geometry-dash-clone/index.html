@@ -1,0 +1,1734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geometry Dash Clone - Jackson's Edition</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Arial Black', sans-serif;
+            overflow: hidden;
+        }
+
+        #gameContainer {
+            position: relative;
+        }
+
+        #gameCanvas {
+            border: 3px solid #fff;
+            display: block;
+        }
+
+        #startScreen, #deathScreen, #winScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+
+        #startScreen h1 {
+            font-size: 48px;
+            color: #00ffff;
+            text-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff;
+            margin-bottom: 10px;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .subtitle {
+            color: #888;
+            margin-bottom: 20px;
+        }
+
+        .levelSelect {
+            display: flex;
+            gap: 15px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 500px;
+        }
+
+        .levelBtn {
+            width: 90px;
+            height: 90px;
+            border: 3px solid;
+            border-radius: 10px;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 5px;
+        }
+
+        .levelBtn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 20px currentColor;
+        }
+
+        .levelBtn .levelName {
+            font-size: 8px;
+            margin-top: 4px;
+            text-align: center;
+            line-height: 1.1;
+        }
+
+        .levelBtn .stars {
+            font-size: 10px;
+            margin-top: 2px;
+        }
+
+        .instructions {
+            color: #aaa;
+            font-size: 16px;
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        #deathScreen h2, #winScreen h2 {
+            font-size: 42px;
+            margin-bottom: 20px;
+        }
+
+        #deathScreen h2 {
+            color: #ff4444;
+            text-shadow: 0 0 20px #ff4444;
+        }
+
+        #winScreen h2 {
+            color: #44ff44;
+            text-shadow: 0 0 20px #44ff44;
+        }
+
+        .stat {
+            color: #fff;
+            font-size: 20px;
+            margin: 10px 0;
+        }
+
+        .btn {
+            padding: 15px 40px;
+            font-size: 20px;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            transform: scale(1.1);
+        }
+
+        .btn-retry {
+            background: #ff4444;
+            color: white;
+        }
+
+        .btn-menu {
+            background: #4444ff;
+            color: white;
+        }
+
+        .btn-next {
+            background: #44ff44;
+            color: black;
+        }
+
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px;
+            color: white;
+            font-size: 18px;
+            pointer-events: none;
+        }
+
+        #levelNameDisplay {
+            position: absolute;
+            top: 35px;
+            left: 20px;
+            color: rgba(255,255,255,0.6);
+            font-size: 14px;
+            pointer-events: none;
+        }
+
+        #progressBar {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 8px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        #progressFill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ffff, #ff00ff);
+            width: 0%;
+            transition: width 0.1s;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        #volumeControl {
+            position: absolute;
+            bottom: 30px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: white;
+            font-size: 14px;
+            z-index: 5;
+        }
+
+        #volumeSlider {
+            width: 80px;
+            cursor: pointer;
+        }
+
+        #clickToStart {
+            color: #ffff00;
+            font-size: 18px;
+            margin-top: 20px;
+            animation: blink 1s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+
+        <div id="ui">
+            <span id="attemptDisplay">Attempt: 1</span>
+            <span id="progressDisplay">0%</span>
+        </div>
+        <div id="levelNameDisplay"></div>
+
+        <div id="progressBar">
+            <div id="progressFill"></div>
+        </div>
+
+        <div id="volumeControl">
+            <span>VOL</span>
+            <input type="range" id="volumeSlider" min="0" max="100" value="70">
+        </div>
+
+        <div id="startScreen">
+            <h1>GEOMETRY DASH</h1>
+            <p class="subtitle">Jackson's Edition</p>
+            <div class="levelSelect" id="levelSelect"></div>
+            <p class="instructions">
+                Click, Space, or Up Arrow to JUMP<br>
+                Avoid the spikes! Don't hit the blocks!
+            </p>
+            <p id="clickToStart">Click anywhere to enable audio</p>
+        </div>
+
+        <div id="deathScreen" class="hidden">
+            <h2>YOU CRASHED!</h2>
+            <p class="stat">Progress: <span id="deathProgress">0%</span></p>
+            <p class="stat">Attempt: <span id="deathAttempt">1</span></p>
+            <div>
+                <button class="btn btn-retry" onclick="retry()">RETRY</button>
+                <button class="btn btn-menu" onclick="showMenu()">MENU</button>
+            </div>
+        </div>
+
+        <div id="winScreen" class="hidden">
+            <h2>LEVEL COMPLETE!</h2>
+            <p class="stat">Attempts: <span id="winAttempts">1</span></p>
+            <p class="stat" id="newBestText" style="color: #ffff00;"></p>
+            <div>
+                <button class="btn btn-next" id="nextLevelBtn" onclick="nextLevel()">NEXT LEVEL</button>
+                <button class="btn btn-retry" onclick="retry()">PLAY AGAIN</button>
+                <button class="btn btn-menu" onclick="showMenu()">MENU</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = 800;
+        canvas.height = 450;
+
+        // ============ AUDIO ENGINE ============
+        let audioCtx = null;
+        let masterGain = null;
+        let musicPlaying = false;
+        let currentBeat = 0;
+        let beatInterval = null;
+        let audioInitialized = false;
+
+        // Initialize audio on first user interaction
+        function initAudio() {
+            if (!audioInitialized) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                masterGain = audioCtx.createGain();
+                masterGain.connect(audioCtx.destination);
+                masterGain.gain.value = 0.7;
+                audioInitialized = true;
+                document.getElementById('clickToStart').style.display = 'none';
+            }
+            // Resume audio context if it was suspended (browsers do this)
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // Volume control
+        document.getElementById('volumeSlider').addEventListener('input', (e) => {
+            if (masterGain) {
+                masterGain.gain.value = e.target.value / 100;
+            }
+        });
+
+        // Sound synthesis functions
+        function playKick(time = 0) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(masterGain);
+
+            osc.frequency.setValueAtTime(150, audioCtx.currentTime + time);
+            osc.frequency.exponentialRampToValueAtTime(30, audioCtx.currentTime + time + 0.1);
+
+            gain.gain.setValueAtTime(1, audioCtx.currentTime + time);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + time + 0.3);
+
+            osc.start(audioCtx.currentTime + time);
+            osc.stop(audioCtx.currentTime + time + 0.3);
+        }
+
+        function playSnare(time = 0) {
+            if (!audioCtx) return;
+            // Noise for snare
+            const bufferSize = audioCtx.sampleRate * 0.1;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+
+            const noiseGain = audioCtx.createGain();
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'highpass';
+            filter.frequency.value = 1000;
+
+            noise.connect(filter);
+            filter.connect(noiseGain);
+            noiseGain.connect(masterGain);
+
+            noiseGain.gain.setValueAtTime(0.5, audioCtx.currentTime + time);
+            noiseGain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + time + 0.15);
+
+            noise.start(audioCtx.currentTime + time);
+            noise.stop(audioCtx.currentTime + time + 0.15);
+        }
+
+        function playHihat(time = 0, open = false) {
+            if (!audioCtx) return;
+            const bufferSize = audioCtx.sampleRate * (open ? 0.15 : 0.05);
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'highpass';
+            filter.frequency.value = 7000;
+
+            const gain = audioCtx.createGain();
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(masterGain);
+
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime + time);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + time + (open ? 0.15 : 0.05));
+
+            noise.start(audioCtx.currentTime + time);
+        }
+
+        function playBass(freq, time = 0, duration = 0.2) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = 'sawtooth';
+            osc.frequency.value = freq;
+
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.value = 400;
+
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(masterGain);
+
+            gain.gain.setValueAtTime(0.4, audioCtx.currentTime + time);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + time + duration);
+
+            osc.start(audioCtx.currentTime + time);
+            osc.stop(audioCtx.currentTime + time + duration);
+        }
+
+        function playSynth(freq, time = 0, duration = 0.15, type = 'square') {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = type;
+            osc.frequency.value = freq;
+
+            osc.connect(gain);
+            gain.connect(masterGain);
+
+            gain.gain.setValueAtTime(0.15, audioCtx.currentTime + time);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + time + duration);
+
+            osc.start(audioCtx.currentTime + time);
+            osc.stop(audioCtx.currentTime + time + duration);
+        }
+
+        function playArp(freq, time = 0) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = 'square';
+            osc.frequency.value = freq;
+
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(2000, audioCtx.currentTime + time);
+            filter.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + time + 0.1);
+
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(masterGain);
+
+            gain.gain.setValueAtTime(0.12, audioCtx.currentTime + time);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + time + 0.1);
+
+            osc.start(audioCtx.currentTime + time);
+            osc.stop(audioCtx.currentTime + time + 0.1);
+        }
+
+        function playDeathSound() {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.3);
+
+            osc.connect(gain);
+            gain.connect(masterGain);
+
+            gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.3);
+        }
+
+        function playJumpSound() {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.1);
+
+            osc.connect(gain);
+            gain.connect(masterGain);
+
+            gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.1);
+        }
+
+        function playWinSound() {
+            if (!audioCtx) return;
+            const notes = [523, 659, 784, 1047]; // C5, E5, G5, C6
+            notes.forEach((freq, i) => {
+                playSynth(freq, i * 0.15, 0.4, 'sine');
+            });
+        }
+
+        // ============ MUSIC TRACKS ============
+        // Each level has its own BPM and musical pattern
+
+        const levelMusic = [
+            // Level 1: "NEON PULSE" - 128 BPM, classic four-on-the-floor
+            {
+                name: 'NEON PULSE',
+                bpm: 128,
+                play: (beat) => {
+                    // Kick on every beat
+                    if (beat % 4 === 0) playKick();
+                    // Snare on 2 and 4
+                    if (beat % 8 === 4) playSnare();
+                    // Hi-hats
+                    if (beat % 2 === 0) playHihat();
+                    // Bass line
+                    const bassNotes = [55, 55, 73, 65]; // A1, A1, D2, C2
+                    if (beat % 4 === 0) playBass(bassNotes[Math.floor(beat / 4) % 4], 0, 0.3);
+                    // Synth melody
+                    const melody = [440, 523, 587, 523, 440, 392, 440, 523];
+                    if (beat % 2 === 0) playSynth(melody[Math.floor(beat / 2) % 8], 0, 0.15);
+                }
+            },
+            // Level 2: "DIGITAL STORM" - 140 BPM, aggressive
+            {
+                name: 'DIGITAL STORM',
+                bpm: 140,
+                play: (beat) => {
+                    // Hard kick pattern
+                    if (beat % 4 === 0 || beat % 8 === 6) playKick();
+                    // Snare
+                    if (beat % 8 === 4) playSnare();
+                    // Fast hi-hats
+                    playHihat(0, beat % 4 === 2);
+                    // Aggressive bass
+                    const bassNotes = [41, 41, 55, 49]; // E1, E1, A1, G1
+                    if (beat % 2 === 0) playBass(bassNotes[Math.floor(beat / 2) % 4], 0, 0.15);
+                    // Arpeggio
+                    const arp = [329, 392, 523, 659, 523, 392];
+                    if (beat % 1 === 0) playArp(arp[beat % 6]);
+                }
+            },
+            // Level 3: "CYBER WAVE" - 135 BPM, synthwave vibes
+            {
+                name: 'CYBER WAVE',
+                bpm: 135,
+                play: (beat) => {
+                    // Kick
+                    if (beat % 4 === 0) playKick();
+                    // Clap/snare on 2 and 4
+                    if (beat % 8 === 4) playSnare();
+                    // Open hi-hat pattern
+                    if (beat % 4 === 2) playHihat(0, true);
+                    if (beat % 2 === 1) playHihat();
+                    // Deep bass
+                    const bassNotes = [65, 65, 82, 73];
+                    if (beat % 4 === 0) playBass(bassNotes[Math.floor(beat / 4) % 4], 0, 0.4);
+                    // Dreamy synth
+                    const melody = [659, 784, 880, 784, 659, 587, 523, 587];
+                    if (beat % 4 === 0) playSynth(melody[Math.floor(beat / 4) % 8], 0, 0.3, 'sine');
+                    if (beat % 4 === 2) playSynth(melody[(Math.floor(beat / 4) + 1) % 8] * 0.5, 0, 0.2, 'triangle');
+                }
+            },
+            // Level 4: "HYPERDRIVE" - 150 BPM, intense
+            {
+                name: 'HYPERDRIVE',
+                bpm: 150,
+                play: (beat) => {
+                    // Double kick
+                    if (beat % 4 === 0 || beat % 4 === 2) playKick();
+                    // Snare
+                    if (beat % 4 === 2) playSnare();
+                    // 16th note hi-hats
+                    playHihat(0, beat % 8 === 4);
+                    // Pumping bass
+                    const bassNotes = [55, 73, 82, 65];
+                    if (beat % 2 === 0) playBass(bassNotes[Math.floor(beat / 2) % 4], 0, 0.12);
+                    // Rapid arpeggios
+                    const arp = [440, 554, 659, 880, 659, 554, 440, 330];
+                    playArp(arp[beat % 8]);
+                }
+            },
+            // Level 5: "FINAL BOSS" - 160 BPM, ultimate challenge
+            {
+                name: 'FINAL BOSS',
+                bpm: 160,
+                play: (beat) => {
+                    // Relentless kicks
+                    if (beat % 2 === 0) playKick();
+                    // Snare rolls
+                    if (beat % 8 === 4 || beat % 8 === 6 || beat % 8 === 7) playSnare();
+                    // Crazy hi-hats
+                    playHihat(0, beat % 2 === 1);
+                    // Dark bass
+                    const bassNotes = [41, 41, 49, 37]; // E1, E1, G1, D1
+                    if (beat % 4 === 0) playBass(bassNotes[Math.floor(beat / 4) % 4], 0, 0.2);
+                    // Intense melody
+                    const melody = [659, 698, 784, 880, 784, 698, 659, 587];
+                    if (beat % 2 === 0) playSynth(melody[Math.floor(beat / 2) % 8], 0, 0.1);
+                    // Counter melody
+                    const counter = [329, 349, 392, 440];
+                    if (beat % 4 === 2) playSynth(counter[Math.floor(beat / 4) % 4], 0, 0.15, 'sawtooth');
+                }
+            },
+            // Level 6: "CHAOS THEORY" - 145 BPM, randomly generated!
+            {
+                name: 'CHAOS THEORY',
+                bpm: 145,
+                play: (beat) => {
+                    // Chaotic pattern
+                    if (beat % 4 === 0 || beat % 7 === 0) playKick();
+                    if (beat % 6 === 3) playSnare();
+                    if (beat % 3 === 0) playHihat(0, beat % 5 === 0);
+                    // Unpredictable bass
+                    const bassNotes = [55, 62, 41, 73, 49, 82];
+                    if (beat % 3 === 0) playBass(bassNotes[beat % 6], 0, 0.2);
+                    // Glitchy arpeggios
+                    const arp = [330, 440, 550, 660, 880, 440, 330, 220];
+                    if (beat % 2 === 0) playArp(arp[(beat * 3) % 8]);
+                    // Random-feeling synth hits
+                    if (beat % 5 === 2) playSynth(523 + (beat % 4) * 100, 0, 0.1, 'square');
+                }
+            }
+        ];
+
+        function startMusic(levelIndex) {
+            stopMusic();
+            if (!audioCtx) return;
+            // Make sure audio context is not suspended
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            const track = levelMusic[levelIndex];
+            const beatDuration = 60 / track.bpm / 2; // 8th notes
+            currentBeat = 0;
+
+            beatInterval = setInterval(() => {
+                if (gameState === 'playing') {
+                    track.play(currentBeat);
+                    currentBeat++;
+                    // Trigger visual beat effect
+                    beatPulse = 1;
+                }
+            }, beatDuration * 1000);
+
+            musicPlaying = true;
+        }
+
+        function stopMusic() {
+            if (beatInterval) {
+                clearInterval(beatInterval);
+                beatInterval = null;
+            }
+            musicPlaying = false;
+        }
+
+        // ============ GAME STATE ============
+        let gameState = 'menu';
+        let currentLevel = 0;
+        let attempt = 1;
+        let progress = 0;
+        let bestProgress = {};
+        let levelCompleted = {};
+        let beatPulse = 0; // For visual beat sync
+
+        const player = {
+            x: 100,
+            y: 300,
+            width: 40,
+            height: 40,
+            velocityY: 0,
+            rotation: 0,
+            onGround: false
+        };
+
+        const gravity = 0.8;
+        const jumpForce = -14;
+        const gameSpeed = 6;
+        let cameraX = 0;
+
+        // Level colors with matching names
+        const levelColors = [
+            { bg: '#1a0a2e', ground: '#4a2c7a', spike: '#ff00ff', block: '#8844ff', player: '#00ffff' },
+            { bg: '#0a1a2e', ground: '#2c4a7a', spike: '#00ffff', block: '#4488ff', player: '#ffff00' },
+            { bg: '#1a0a1a', ground: '#4a2c4a', spike: '#ff44ff', block: '#aa44aa', player: '#44ffff' },
+            { bg: '#1a1a0a', ground: '#4a4a2c', spike: '#ffaa00', block: '#aaaa44', player: '#ff4444' },
+            { bg: '#2e0a0a', ground: '#7a2c2c', spike: '#ff4444', block: '#ff2222', player: '#ffffff' },
+            { bg: '#0a2e1a', ground: '#2c7a4a', spike: '#00ff88', block: '#44ff88', player: '#ff00ff' } // Chaos Theory - green/purple
+        ];
+
+        // Level obstacles - properly spaced for beatable gameplay
+        // Jump covers ~210 pixels, need 250+ pixels between obstacle groups
+        // NEW: orbs for mid-air boost, ship_portal/cube_portal for wave mode, fly_spike for wave obstacles
+        const levels = [
+            // Level 1 - NEON PULSE - Easy intro with orbs
+            [
+                { type: 'spike', x: 500 },
+                { type: 'spike', x: 900 },
+                { type: 'orb', x: 1250 }, // Jump orb!
+                { type: 'spike', x: 1300 },
+                { type: 'spike', x: 1350 },
+                { type: 'block', x: 1800 },
+                { type: 'spike', x: 2200 },
+                { type: 'spike', x: 2250 },
+                { type: 'orb', x: 2650 },
+                { type: 'spike', x: 2700 },
+                { type: 'spike', x: 2750 },
+                { type: 'spike', x: 2800 },
+                { type: 'block', x: 3300 },
+                { type: 'block', x: 3340 },
+                { type: 'spike', x: 3800 }
+            ],
+            // Level 2 - DIGITAL STORM - More orbs, trickier jumps
+            [
+                { type: 'spike', x: 500 },
+                { type: 'spike', x: 550 },
+                { type: 'block', x: 1000 },
+                { type: 'orb', x: 1400 },
+                { type: 'spike', x: 1450 },
+                { type: 'spike', x: 1500 },
+                { type: 'block', x: 2000 },
+                { type: 'block', x: 2040 },
+                { type: 'spike', x: 2500 },
+                { type: 'spike', x: 2550 },
+                { type: 'orb', x: 2950 },
+                { type: 'spike', x: 3000 },
+                { type: 'spike', x: 3050 },
+                { type: 'spike', x: 3100 },
+                { type: 'block', x: 3600 },
+                { type: 'block', x: 3640 },
+                { type: 'block', x: 3680 },
+                { type: 'spike', x: 4150 },
+                { type: 'spike', x: 4200 }
+            ],
+            // Level 3 - CYBER WAVE - First wave section!
+            [
+                { type: 'spike', x: 450 },
+                { type: 'spike', x: 500 },
+                { type: 'block', x: 1000 },
+                { type: 'orb', x: 1400 },
+                { type: 'spike', x: 1450 },
+                { type: 'spike', x: 1500 },
+                // WAVE SECTION - easier gaps (100+ pixel clearance)
+                { type: 'ship_portal', x: 2000 },
+                { type: 'fly_spike', x: 2350, y: 60 },
+                { type: 'fly_spike', x: 2350, y: 300 },
+                { type: 'fly_spike', x: 2600, y: 60 },
+                { type: 'fly_spike', x: 2600, y: 300 },
+                { type: 'fly_spike', x: 2850, y: 60 },
+                { type: 'fly_spike', x: 2850, y: 300 },
+                { type: 'cube_portal', x: 3150 },
+                // Back to cube
+                { type: 'spike', x: 3650 },
+                { type: 'spike', x: 3700 },
+                { type: 'block', x: 4200 },
+                { type: 'spike', x: 4650 }
+            ],
+            // Level 4 - HYPERDRIVE - Intense wave + orbs combo
+            [
+                { type: 'spike', x: 400 },
+                { type: 'spike', x: 450 },
+                { type: 'orb', x: 900 },
+                { type: 'spike', x: 950 },
+                { type: 'spike', x: 1000 },
+                { type: 'spike', x: 1050 },
+                { type: 'block', x: 1550 },
+                { type: 'block', x: 1590 },
+                // WAVE SECTION - clear middle path
+                { type: 'ship_portal', x: 2100 },
+                { type: 'fly_spike', x: 2400, y: 60 },
+                { type: 'fly_spike', x: 2400, y: 300 },
+                { type: 'fly_spike', x: 2650, y: 60 },
+                { type: 'fly_spike', x: 2650, y: 300 },
+                { type: 'fly_spike', x: 2900, y: 60 },
+                { type: 'fly_spike', x: 2900, y: 300 },
+                { type: 'cube_portal', x: 3200 },
+                // Back to cube with orbs
+                { type: 'orb', x: 3650 },
+                { type: 'spike', x: 3700 },
+                { type: 'spike', x: 3750 },
+                { type: 'spike', x: 3800 },
+                { type: 'block', x: 4350 },
+                { type: 'spike', x: 4850 },
+                { type: 'spike', x: 4900 }
+            ],
+            // Level 5 - FINAL BOSS - Everything combined, challenging but beatable
+            [
+                { type: 'spike', x: 400 },
+                { type: 'spike', x: 450 },
+                { type: 'spike', x: 500 },
+                { type: 'orb', x: 900 },
+                { type: 'spike', x: 950 },
+                { type: 'spike', x: 1000 },
+                { type: 'spike', x: 1050 },
+                { type: 'block', x: 1550 },
+                { type: 'block', x: 1590 },
+                // FIRST WAVE - top/bottom spikes with middle path
+                { type: 'ship_portal', x: 2050 },
+                { type: 'fly_spike', x: 2350, y: 60 },
+                { type: 'fly_spike', x: 2350, y: 300 },
+                { type: 'fly_spike', x: 2550, y: 60 },
+                { type: 'fly_spike', x: 2550, y: 300 },
+                { type: 'fly_spike', x: 2750, y: 60 },
+                { type: 'fly_spike', x: 2750, y: 300 },
+                { type: 'cube_portal', x: 3000 },
+                // Mid section with orbs
+                { type: 'orb', x: 3400 },
+                { type: 'spike', x: 3450 },
+                { type: 'spike', x: 3500 },
+                { type: 'spike', x: 3550 },
+                { type: 'block', x: 4050 },
+                // SECOND WAVE - alternating high/low
+                { type: 'ship_portal', x: 4500 },
+                { type: 'fly_spike', x: 4750, y: 60 },
+                { type: 'fly_spike', x: 4750, y: 300 },
+                { type: 'fly_spike', x: 5000, y: 60 },
+                { type: 'fly_spike', x: 5000, y: 300 },
+                { type: 'fly_spike', x: 5250, y: 60 },
+                { type: 'fly_spike', x: 5250, y: 300 },
+                { type: 'cube_portal', x: 5500 },
+                // Final stretch
+                { type: 'spike', x: 5950 },
+                { type: 'spike', x: 6000 }
+            ],
+            // Level 6 - CHAOS THEORY - Randomly generated (placeholder, filled at runtime)
+            []
+        ];
+
+        // Generate random level for CHAOS THEORY
+        function generateRandomLevel() {
+            const obstacles = [];
+            let x = 500;
+            const levelEnd = 6000;
+            let inWaveMode = false;
+
+            while (x < levelEnd) {
+                const rand = Math.random();
+
+                if (!inWaveMode) {
+                    // Cube mode obstacles
+                    if (rand < 0.3) {
+                        // Single spike
+                        obstacles.push({ type: 'spike', x: x });
+                        x += 300 + Math.random() * 200;
+                    } else if (rand < 0.5) {
+                        // Spike group (2-3)
+                        const count = Math.floor(Math.random() * 2) + 2;
+                        for (let i = 0; i < count; i++) {
+                            obstacles.push({ type: 'spike', x: x + i * 50 });
+                        }
+                        x += count * 50 + 350 + Math.random() * 150;
+                    } else if (rand < 0.65) {
+                        // Block(s)
+                        const count = Math.floor(Math.random() * 2) + 1;
+                        for (let i = 0; i < count; i++) {
+                            obstacles.push({ type: 'block', x: x + i * 40 });
+                        }
+                        x += count * 40 + 400 + Math.random() * 100;
+                    } else if (rand < 0.8) {
+                        // Orb + spike combo
+                        obstacles.push({ type: 'orb', x: x });
+                        const spikeCount = Math.floor(Math.random() * 3) + 2;
+                        for (let i = 0; i < spikeCount; i++) {
+                            obstacles.push({ type: 'spike', x: x + 50 + i * 50 });
+                        }
+                        x += 50 + spikeCount * 50 + 400;
+                    } else if (rand < 0.9 && x > 1500 && x < levelEnd - 1500) {
+                        // Enter wave mode
+                        obstacles.push({ type: 'ship_portal', x: x });
+                        inWaveMode = true;
+                        x += 250;
+                    } else {
+                        // Gap
+                        x += 200 + Math.random() * 100;
+                    }
+                } else {
+                    // Wave mode - ALWAYS BEATABLE: just top and bottom spikes
+                    if (rand < 0.6) {
+                        // Simple top/bottom pattern - always passable through middle
+                        obstacles.push({ type: 'fly_spike', x: x, y: 60 });
+                        obstacles.push({ type: 'fly_spike', x: x, y: 300 });
+                        x += 250; // Generous spacing
+                    } else {
+                        // Exit wave mode after a few obstacles
+                        obstacles.push({ type: 'cube_portal', x: x });
+                        inWaveMode = false;
+                        x += 450;
+                    }
+                }
+            }
+
+            // Make sure we end in cube mode
+            if (inWaveMode) {
+                obstacles.push({ type: 'cube_portal', x: x });
+            }
+
+            return obstacles;
+        }
+
+        let currentObstacles = [];
+        let particles = [];
+        let levelLength = 0;
+        const groundY = 350;
+
+        // Ship mode state
+        let shipMode = false;
+        const shipGravity = 0.5;
+        const shipLift = -0.8;
+
+        // Input handling
+        let jumpPressed = false;
+        let jumpJustPressed = false;
+
+        function handleInput() {
+            if (gameState !== 'playing') return;
+
+            // Ship mode doesn't use click for jumping
+            if (shipMode) return;
+
+            // Normal cube mode - jump immediately if on ground
+            if (player.onGround && jumpPressed) {
+                player.velocityY = jumpForce;
+                player.onGround = false;
+                createJumpParticles();
+                playJumpSound();
+                return;
+            }
+
+            // Check for orb boost (only when in air and just pressed)
+            if (jumpJustPressed && !player.onGround) {
+                checkOrbBoost();
+            }
+        }
+
+        // Separate function for orb detection - only called when needed
+        function checkOrbBoost() {
+            const px = player.x + player.width / 2;
+            const py = player.y + player.height / 2;
+
+            for (let i = 0; i < currentObstacles.length; i++) {
+                const obstacle = currentObstacles[i];
+                if (obstacle.type !== 'orb' || obstacle.used) continue;
+
+                const orbX = obstacle.x + 20;
+                const orbY = groundY - 40;
+
+                // Quick distance check (no sqrt for speed)
+                const dx = px - orbX;
+                const dy = py - orbY;
+                if (dx * dx + dy * dy < 2500) { // 50^2 = 2500
+                    player.velocityY = jumpForce * 1.2;
+                    obstacle.used = true;
+                    playOrbSound();
+                    createOrbParticles(orbX, orbY);
+                    return;
+                }
+            }
+        }
+
+        function playOrbSound() {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+            osc.connect(gain);
+            gain.connect(masterGain);
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.15);
+        }
+
+        function playPortalSound() {
+            if (!audioCtx) return;
+            // Wooshy portal sound
+            const osc1 = audioCtx.createOscillator();
+            const osc2 = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc1.type = 'sine';
+            osc2.type = 'triangle';
+            osc1.frequency.setValueAtTime(200, audioCtx.currentTime);
+            osc1.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.2);
+            osc2.frequency.setValueAtTime(400, audioCtx.currentTime);
+            osc2.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.2);
+
+            osc1.connect(gain);
+            osc2.connect(gain);
+            gain.connect(masterGain);
+
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+
+            osc1.start();
+            osc2.start();
+            osc1.stop(audioCtx.currentTime + 0.25);
+            osc2.stop(audioCtx.currentTime + 0.25);
+        }
+
+        function createOrbParticles(x, y) {
+            for (let i = 0; i < 15; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 10,
+                    vy: (Math.random() - 0.5) * 10,
+                    life: 1,
+                    color: '#ffff00',
+                    size: Math.random() * 8 + 4
+                });
+            }
+        }
+
+        // Initialize audio on any click
+        document.addEventListener('click', initAudio, { once: false });
+        document.addEventListener('keydown', initAudio, { once: false });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') {
+                e.preventDefault();
+                if (!jumpPressed) jumpJustPressed = true;
+                jumpPressed = true;
+                handleInput();
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') {
+                jumpPressed = false;
+            }
+        });
+
+        canvas.addEventListener('mousedown', () => {
+            if (!jumpPressed) jumpJustPressed = true;
+            jumpPressed = true;
+            handleInput();
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            jumpPressed = false;
+        });
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            initAudio();
+            if (!jumpPressed) jumpJustPressed = true;
+            jumpPressed = true;
+            handleInput();
+        });
+
+        canvas.addEventListener('touchend', () => {
+            jumpPressed = false;
+        });
+
+        // Particle system
+        function createJumpParticles() {
+            const colors = levelColors[currentLevel];
+            for (let i = 0; i < 8; i++) {
+                particles.push({
+                    x: player.x + player.width / 2,
+                    y: player.y + player.height,
+                    vx: (Math.random() - 0.5) * 6,
+                    vy: Math.random() * 3 + 1,
+                    life: 1,
+                    color: colors.player
+                });
+            }
+        }
+
+        function createDeathParticles() {
+            const colors = levelColors[currentLevel];
+            for (let i = 0; i < 30; i++) {
+                particles.push({
+                    x: player.x + player.width / 2,
+                    y: player.y + player.height / 2,
+                    vx: (Math.random() - 0.5) * 15,
+                    vy: (Math.random() - 0.5) * 15,
+                    life: 1,
+                    color: colors.player,
+                    size: Math.random() * 10 + 5
+                });
+            }
+        }
+
+        function updateParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.2;
+                p.life -= 0.03;
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        function drawParticles() {
+            particles.forEach(p => {
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                const size = p.size || 6;
+                ctx.fillRect(p.x - cameraX - size/2, p.y - size/2, size, size);
+            });
+            ctx.globalAlpha = 1;
+        }
+
+        // Level management
+        function loadLevel(levelIndex) {
+            currentLevel = levelIndex;
+
+            // Level 6 (index 5) is randomly generated each time
+            if (levelIndex === 5) {
+                currentObstacles = generateRandomLevel();
+            } else {
+                currentObstacles = JSON.parse(JSON.stringify(levels[levelIndex]));
+            }
+
+            levelLength = Math.max(...currentObstacles.map(o => o.x)) + 600;
+            document.getElementById('levelNameDisplay').textContent = levelMusic[levelIndex].name;
+            resetPlayer();
+        }
+
+        function resetPlayer() {
+            player.x = 100;
+            player.y = groundY - player.height;
+            player.velocityY = 0;
+            player.rotation = 0;
+            player.onGround = true;
+            cameraX = 0;
+            particles = [];
+            shipMode = false;
+            // Reset orbs
+            currentObstacles.forEach(o => { if (o.type === 'orb') o.used = false; });
+        }
+
+        // Collision detection
+        function checkCollision(obstacle) {
+            // Handle different obstacle sizes
+            let oWidth, oHeight, oY;
+
+            if (obstacle.type === 'block') {
+                oWidth = 40; oHeight = 40; oY = groundY - 40;
+            } else if (obstacle.type === 'spike') {
+                oWidth = 35; oHeight = 35; oY = groundY - 35;
+            } else if (obstacle.type === 'orb') {
+                return null; // Orbs don't cause collision, handled separately
+            } else if (obstacle.type === 'ship_portal' || obstacle.type === 'cube_portal') {
+                oWidth = 30; oHeight = 80; oY = groundY - 80;
+            } else if (obstacle.type === 'fly_spike') {
+                oWidth = 35; oHeight = 35; oY = obstacle.y || (groundY - 150);
+            } else {
+                oWidth = 35; oHeight = 35; oY = groundY - 35;
+            }
+
+            const playerRight = player.x + player.width - 8;
+            const playerLeft = player.x + 8;
+            const playerBottom = player.y + player.height;
+            const playerTop = player.y + 8;
+
+            const obsRight = obstacle.x + oWidth;
+            const obsLeft = obstacle.x;
+            const obsBottom = oY + oHeight;
+            const obsTop = oY;
+
+            if (playerRight > obsLeft && playerLeft < obsRight &&
+                playerBottom > obsTop && playerTop < obsBottom) {
+
+                if (obstacle.type === 'spike' || obstacle.type === 'fly_spike') {
+                    return 'death';
+                } else if (obstacle.type === 'block') {
+                    if (player.velocityY > 0 && player.y + player.height - player.velocityY <= obsTop + 5) {
+                        player.y = obsTop - player.height;
+                        player.velocityY = 0;
+                        player.onGround = true;
+                        return 'land';
+                    }
+                    return 'death';
+                } else if (obstacle.type === 'ship_portal') {
+                    if (!shipMode) {
+                        shipMode = true;
+                        player.velocityY = -2;
+                        player.y = Math.min(player.y, groundY - 100); // Start in middle
+                        playPortalSound();
+                    }
+                    return 'portal';
+                } else if (obstacle.type === 'cube_portal') {
+                    if (shipMode) {
+                        shipMode = false;
+                        player.y = groundY - player.height; // Reset to ground
+                        player.velocityY = 0;
+                        player.onGround = true;
+                        playPortalSound();
+                    }
+                    return 'portal';
+                }
+            }
+            return null;
+        }
+
+        // Game loop
+        function update() {
+            if (gameState !== 'playing') return;
+
+            // Reset jumpJustPressed at end of frame
+            jumpJustPressed = false;
+
+            if (shipMode) {
+                // WAVE MODE - diagonal movement like Geometry Dash wave
+                const waveSpeed = 7;
+                if (jumpPressed) {
+                    player.velocityY = -waveSpeed; // Go up diagonally
+                } else {
+                    player.velocityY = waveSpeed; // Go down diagonally
+                }
+                player.y += player.velocityY;
+
+                // Ceiling and floor bounds
+                if (player.y < 50) {
+                    player.y = 50;
+                    player.velocityY = 0;
+                }
+                if (player.y + player.height > groundY) {
+                    player.y = groundY - player.height;
+                    player.velocityY = 0;
+                }
+
+                // Wave trail particles
+                if (Math.random() < 0.5) {
+                    particles.push({
+                        x: player.x,
+                        y: player.y + player.height / 2,
+                        vx: -2,
+                        vy: 0,
+                        life: 0.5,
+                        color: levelColors[currentLevel].player,
+                        size: 4
+                    });
+                }
+            } else {
+                // Normal cube mode
+                player.velocityY += gravity;
+                player.y += player.velocityY;
+
+                if (player.y + player.height >= groundY) {
+                    player.y = groundY - player.height;
+                    player.velocityY = 0;
+                    player.onGround = true;
+                } else {
+                    player.onGround = false;
+                }
+
+                if (!player.onGround) {
+                    player.rotation += 5;
+                } else {
+                    player.rotation = Math.round(player.rotation / 90) * 90;
+                }
+
+                // Check if on block
+                if (player.onGround && player.y + player.height < groundY) {
+                    let onBlock = false;
+                    for (const obstacle of currentObstacles) {
+                        if (obstacle.type === 'block') {
+                            const oY = groundY - 40;
+                            if (player.x + player.width > obstacle.x &&
+                                player.x < obstacle.x + 40 &&
+                                Math.abs((player.y + player.height) - oY) < 5) {
+                                onBlock = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!onBlock) {
+                        player.onGround = false;
+                    }
+                }
+            }
+
+            cameraX += gameSpeed;
+            player.x += gameSpeed;
+
+            // Check collisions
+            for (const obstacle of currentObstacles) {
+                const result = checkCollision(obstacle);
+                if (result === 'death') {
+                    die();
+                    return;
+                }
+            }
+
+            progress = Math.min(100, Math.floor((cameraX / levelLength) * 100));
+            document.getElementById('progressDisplay').textContent = progress + '%';
+            document.getElementById('progressFill').style.width = progress + '%';
+
+            if (cameraX >= levelLength) {
+                win();
+            }
+
+            updateParticles();
+
+            // Decay beat pulse
+            beatPulse *= 0.9;
+        }
+
+        function die() {
+            gameState = 'dead';
+            createDeathParticles();
+            stopMusic();
+            playDeathSound();
+
+            if (!bestProgress[currentLevel] || progress > bestProgress[currentLevel]) {
+                bestProgress[currentLevel] = progress;
+            }
+
+            document.getElementById('deathProgress').textContent = progress + '%';
+            document.getElementById('deathAttempt').textContent = attempt;
+            document.getElementById('deathScreen').classList.remove('hidden');
+        }
+
+        function win() {
+            gameState = 'win';
+            levelCompleted[currentLevel] = true;
+            stopMusic();
+            playWinSound();
+
+            const isNewBest = !bestProgress[currentLevel] || attempt < bestProgress[currentLevel + '_attempts'];
+            bestProgress[currentLevel + '_attempts'] = Math.min(
+                attempt,
+                bestProgress[currentLevel + '_attempts'] || Infinity
+            );
+
+            document.getElementById('winAttempts').textContent = attempt;
+            document.getElementById('newBestText').textContent = isNewBest ? 'NEW BEST!' : '';
+            document.getElementById('nextLevelBtn').style.display =
+                currentLevel < levels.length - 1 ? 'inline-block' : 'none';
+            document.getElementById('winScreen').classList.remove('hidden');
+
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    particles.push({
+                        x: Math.random() * canvas.width + cameraX,
+                        y: canvas.height + 20,
+                        vx: (Math.random() - 0.5) * 4,
+                        vy: -Math.random() * 15 - 5,
+                        life: 1,
+                        color: ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'][Math.floor(Math.random() * 6)],
+                        size: Math.random() * 8 + 4
+                    });
+                }, i * 30);
+            }
+        }
+
+        function retry() {
+            attempt++;
+            document.getElementById('attemptDisplay').textContent = 'Attempt: ' + attempt;
+            document.getElementById('deathScreen').classList.add('hidden');
+            document.getElementById('winScreen').classList.add('hidden');
+
+            // Regenerate random level on retry for CHAOS THEORY
+            if (currentLevel === 5) {
+                currentObstacles = generateRandomLevel();
+                levelLength = Math.max(...currentObstacles.map(o => o.x)) + 600;
+            }
+
+            resetPlayer();
+            gameState = 'playing';
+            startMusic(currentLevel);
+        }
+
+        function nextLevel() {
+            if (currentLevel < levels.length - 1) {
+                initAudio();
+                attempt = 1;
+                document.getElementById('attemptDisplay').textContent = 'Attempt: 1';
+                document.getElementById('winScreen').classList.add('hidden');
+                const nextLevelIndex = currentLevel + 1;
+                loadLevel(nextLevelIndex);
+                gameState = 'playing';
+                startMusic(nextLevelIndex);
+            }
+        }
+
+        function showMenu() {
+            gameState = 'menu';
+            stopMusic();
+            document.getElementById('deathScreen').classList.add('hidden');
+            document.getElementById('winScreen').classList.add('hidden');
+            document.getElementById('startScreen').classList.remove('hidden');
+            document.getElementById('levelNameDisplay').textContent = '';
+            renderLevelSelect();
+        }
+
+        function startLevel(levelIndex) {
+            initAudio();
+            attempt = 1;
+            document.getElementById('attemptDisplay').textContent = 'Attempt: 1';
+            document.getElementById('startScreen').classList.add('hidden');
+            loadLevel(levelIndex);
+            gameState = 'playing';
+            startMusic(levelIndex);
+        }
+
+        function renderLevelSelect() {
+            const container = document.getElementById('levelSelect');
+            container.innerHTML = '';
+
+            levelColors.forEach((colors, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'levelBtn';
+                btn.style.background = colors.bg;
+                btn.style.borderColor = colors.player;
+                btn.style.color = colors.player;
+
+                const completed = levelCompleted[index];
+                const trackName = levelMusic[index].name;
+
+                btn.innerHTML = `
+                    ${index + 1}
+                    <span class="levelName">${trackName}</span>
+                    <span class="stars">${completed ? '★★★' : '☆☆☆'}</span>
+                `;
+                btn.onclick = () => startLevel(index);
+                container.appendChild(btn);
+            });
+        }
+
+        // Drawing
+        function draw() {
+            const colors = levelColors[currentLevel] || levelColors[0];
+
+            // Background with beat pulse effect
+            const pulseIntensity = beatPulse * 0.3;
+            ctx.fillStyle = colors.bg;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Beat flash overlay
+            if (beatPulse > 0.1) {
+                ctx.fillStyle = `rgba(255,255,255,${pulseIntensity * 0.1})`;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+
+            // Background grid effect
+            ctx.strokeStyle = `rgba(255,255,255,${0.05 + pulseIntensity * 0.05})`;
+            ctx.lineWidth = 1;
+            const gridSize = 50;
+            const offsetX = -cameraX % gridSize;
+            for (let x = offsetX; x < canvas.width; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y < canvas.height; y += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+
+            // Ground
+            ctx.fillStyle = colors.ground;
+            ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
+
+            // Ground top line with beat pulse
+            ctx.strokeStyle = colors.player;
+            ctx.lineWidth = 3 + beatPulse * 2;
+            ctx.shadowColor = colors.player;
+            ctx.shadowBlur = 10 + beatPulse * 20;
+            ctx.beginPath();
+            ctx.moveTo(0, groundY);
+            ctx.lineTo(canvas.width, groundY);
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // Draw obstacles
+            currentObstacles.forEach(obstacle => {
+                const screenX = obstacle.x - cameraX;
+                if (screenX > -50 && screenX < canvas.width + 50) {
+                    if (obstacle.type === 'spike') {
+                        drawSpike(screenX, groundY - 35, colors.spike);
+                    } else if (obstacle.type === 'block') {
+                        drawBlock(screenX, groundY - 40, colors.block);
+                    } else if (obstacle.type === 'orb') {
+                        drawOrb(screenX, groundY - 60, obstacle.used);
+                    } else if (obstacle.type === 'ship_portal') {
+                        drawPortal(screenX, groundY - 80, '#ff00ff', 'WAVE');
+                    } else if (obstacle.type === 'cube_portal') {
+                        drawPortal(screenX, groundY - 80, '#00ffff', 'CUBE');
+                    } else if (obstacle.type === 'fly_spike') {
+                        drawSpike(screenX, obstacle.y, colors.spike);
+                    }
+                }
+            });
+
+            drawParticles();
+
+            if (gameState === 'playing' || gameState === 'menu') {
+                if (shipMode) {
+                    drawWavePlayer(colors.player);
+                } else {
+                    drawPlayer(colors.player);
+                }
+            }
+        }
+
+        function drawSpike(x, y, color) {
+            ctx.fillStyle = color;
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 10 + beatPulse * 10;
+            ctx.beginPath();
+            ctx.moveTo(x + 17.5, y);
+            ctx.lineTo(x + 35, y + 35);
+            ctx.lineTo(x, y + 35);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+        }
+
+        function drawBlock(x, y, color) {
+            ctx.fillStyle = color;
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 8 + beatPulse * 8;
+            ctx.fillRect(x, y, 40, 40);
+
+            ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x, y, 40, 40);
+
+            ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+            ctx.strokeRect(x + 5, y + 5, 30, 30);
+            ctx.shadowBlur = 0;
+        }
+
+        function drawOrb(x, y, used) {
+            const colors = levelColors[currentLevel];
+            ctx.save();
+
+            // Pulsing glow
+            const pulse = Math.sin(Date.now() / 100) * 0.3 + 0.7;
+            ctx.shadowColor = used ? '#666' : '#ffff00';
+            ctx.shadowBlur = used ? 5 : 20 * pulse;
+
+            // Outer ring
+            ctx.beginPath();
+            ctx.arc(x + 20, y + 20, 18, 0, Math.PI * 2);
+            ctx.strokeStyle = used ? '#666' : '#ffff00';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            // Inner circle
+            ctx.beginPath();
+            ctx.arc(x + 20, y + 20, 10, 0, Math.PI * 2);
+            ctx.fillStyle = used ? '#444' : '#ffff00';
+            ctx.fill();
+
+            ctx.shadowBlur = 0;
+            ctx.restore();
+        }
+
+        function drawPortal(x, y, color, label) {
+            ctx.save();
+
+            // Portal glow
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 20 + beatPulse * 15;
+
+            // Portal frame
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.ellipse(x + 15, y + 40, 12, 38, 0, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Inner swirl effect
+            const time = Date.now() / 200;
+            ctx.fillStyle = color;
+            ctx.globalAlpha = 0.5;
+            for (let i = 0; i < 3; i++) {
+                const angle = time + i * 2;
+                const radius = 8 + i * 3;
+                ctx.beginPath();
+                ctx.arc(x + 15 + Math.cos(angle) * 5, y + 40 + Math.sin(angle) * 20, 4, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1;
+
+            // Label
+            ctx.font = 'bold 10px Arial';
+            ctx.fillStyle = color;
+            ctx.textAlign = 'center';
+            ctx.fillText(label, x + 15, y - 5);
+
+            ctx.shadowBlur = 0;
+            ctx.restore();
+        }
+
+        function drawWavePlayer(color) {
+            const screenX = player.x - cameraX;
+            const time = Date.now() / 100;
+
+            ctx.save();
+            ctx.translate(screenX + player.width / 2, player.y + player.height / 2);
+
+            // Smooth rotation based on velocity
+            const targetAngle = player.velocityY * 6;
+            ctx.rotate(targetAngle * Math.PI / 180);
+
+            // Outer glow
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 25 + beatPulse * 30;
+
+            // Main wave body - sleek pointed shape
+            const gradient = ctx.createLinearGradient(-20, 0, 25, 0);
+            gradient.addColorStop(0, 'rgba(255,255,255,0.3)');
+            gradient.addColorStop(0.5, color);
+            gradient.addColorStop(1, 'white');
+
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.moveTo(25, 0);          // Sharp front point
+            ctx.lineTo(5, -12);         // Top front
+            ctx.lineTo(-15, -8);        // Top back
+            ctx.lineTo(-20, 0);         // Back point
+            ctx.lineTo(-15, 8);         // Bottom back
+            ctx.lineTo(5, 12);          // Bottom front
+            ctx.closePath();
+            ctx.fill();
+
+            // Inner highlight
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.beginPath();
+            ctx.moveTo(20, 0);
+            ctx.lineTo(5, -8);
+            ctx.lineTo(-10, -5);
+            ctx.lineTo(-10, 5);
+            ctx.lineTo(5, 8);
+            ctx.closePath();
+            ctx.fill();
+
+            // Pulsing core
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(0, 0, 4 + Math.sin(time * 3) * 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Speed lines when moving fast
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.globalAlpha = 0.6;
+            for (let i = 0; i < 3; i++) {
+                ctx.beginPath();
+                ctx.moveTo(-20 - i * 8, -4 + i * 4);
+                ctx.lineTo(-30 - i * 12, -4 + i * 4);
+                ctx.stroke();
+            }
+            ctx.globalAlpha = 1;
+
+            // Outline
+            ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(25, 0);
+            ctx.lineTo(5, -12);
+            ctx.lineTo(-15, -8);
+            ctx.lineTo(-20, 0);
+            ctx.lineTo(-15, 8);
+            ctx.lineTo(5, 12);
+            ctx.closePath();
+            ctx.stroke();
+
+            ctx.shadowBlur = 0;
+            ctx.restore();
+        }
+
+        function drawPlayer(color) {
+            const screenX = player.x - cameraX;
+
+            ctx.save();
+            ctx.translate(screenX + player.width / 2, player.y + player.height / 2);
+            ctx.rotate(player.rotation * Math.PI / 180);
+
+            // Glow effect synced to beat
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 15 + beatPulse * 25;
+
+            ctx.fillStyle = color;
+            ctx.fillRect(-player.width / 2, -player.height / 2, player.width, player.height);
+
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(-player.width / 2, -player.height / 2, player.width, player.height);
+
+            // Face
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.fillRect(-8, -8, 8, 8);
+            ctx.fillRect(2, -8, 8, 8);
+            ctx.fillRect(-6, 4, 14, 6);
+
+            ctx.restore();
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        renderLevelSelect();
+        gameLoop();
+    </script>
+</body>
+</html>

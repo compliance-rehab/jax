@@ -1,0 +1,1494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food Clicker - jax.fun</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            color: #333;
+            transition: background 0.5s ease;
+        }
+
+        /* Navigation */
+        .navbar {
+            padding: 24px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+        .back-home {
+            color: #333;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            letter-spacing: 0.3px;
+        }
+        .back-home:hover {
+            color: #000;
+        }
+        .game-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #999;
+            letter-spacing: 0.3px;
+        }
+
+        /* Main Content */
+        .game-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 32px 24px 80px;
+            display: grid;
+            grid-template-columns: 1.5fr 1fr 1fr 1fr;
+            gap: 16px;
+        }
+
+        /* Left Panel - Clicker */
+        .clicker-panel {
+            background: #fff;
+            border-radius: 16px;
+            padding: 50px 40px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .stats-row {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .stat-box {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 900;
+            color: #333;
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: #999;
+            margin-top: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .food-button-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        .food-button {
+            font-size: 10rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.1s;
+            user-select: none;
+            padding: 20px;
+        }
+
+        .food-button:hover {
+            transform: scale(1.05);
+        }
+
+        .food-button:active {
+            transform: scale(0.95);
+        }
+
+        .current-food-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #666;
+            margin-top: 24px;
+            letter-spacing: 0.5px;
+        }
+
+        .prestige-btn {
+            margin-top: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            transition: all 0.2s;
+        }
+
+        .prestige-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .prestige-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        /* Floating particles */
+        .food-particle {
+            position: absolute;
+            font-size: 3rem;
+            pointer-events: none;
+            animation: float-up 1s ease-out forwards;
+            z-index: 100;
+        }
+
+        @keyframes float-up {
+            0% {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-150px) scale(0.3);
+                opacity: 0;
+            }
+        }
+
+        /* Shop Panel */
+        .shop-panel {
+            background: #fff;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .shop-panel::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .shop-panel::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .shop-panel::-webkit-scrollbar-thumb {
+            background: #ddd;
+            border-radius: 3px;
+        }
+
+        .shop-header {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 16px;
+            text-align: left;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .shop-section {
+            margin-bottom: 24px;
+        }
+
+        .shop-section-title {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: #999;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+        }
+
+        .shop-item {
+            background: #fafafa;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 8px;
+            transition: all 0.15s;
+            border: 1px solid transparent;
+            text-align: center;
+        }
+
+        .shop-item:hover {
+            background: #f5f5f5;
+            border-color: #e0e0e0;
+        }
+
+        .shop-item.locked {
+            opacity: 0.4;
+        }
+
+        .shop-item-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .shop-item-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .shop-item-emoji {
+            font-size: 2.5rem;
+        }
+
+        .shop-item-name {
+            font-weight: 700;
+            color: #333;
+            font-size: 0.95rem;
+        }
+
+        .shop-item-details {
+            font-size: 0.7rem;
+            color: #999;
+            margin-top: 8px;
+            margin-bottom: 8px;
+        }
+
+        .shop-buy-btn {
+            background: #333;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-family: inherit;
+            font-size: 0.8rem;
+            width: 100%;
+            max-width: 200px;
+        }
+
+        .shop-buy-btn:hover:not(:disabled) {
+            background: #000;
+        }
+
+        .shop-buy-btn:active:not(:disabled) {
+            transform: scale(0.95);
+        }
+
+        .shop-buy-btn:disabled {
+            background: #e0e0e0;
+            color: #999;
+            cursor: not-allowed;
+        }
+
+        .shop-buy-btn.owned {
+            background: #2196F3;
+        }
+
+        .shop-buy-btn.owned:hover:not(:disabled) {
+            background: #1976D2;
+        }
+
+        .shop-buy-btn.upgrade {
+            background: #333;
+        }
+
+        .shop-buy-btn.upgrade:hover:not(:disabled) {
+            background: #000;
+        }
+
+        .music-toggle {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 50%;
+            width: 56px;
+            height: 56px;
+            font-size: 1.4rem;
+            cursor: pointer;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            transition: all 0.15s;
+            z-index: 1000;
+        }
+
+        .music-toggle:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        }
+
+        .music-toggle:active {
+            transform: translateY(0);
+        }
+
+        .background-preview {
+            width: 36px;
+            height: 36px;
+            border-radius: 6px;
+            border: 2px solid #e0e0e0;
+            flex-shrink: 0;
+        }
+
+        /* Prestige Modal */
+        .prestige-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .prestige-modal.active {
+            display: flex;
+        }
+
+        .prestige-content {
+            background: #fff;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 900px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .prestige-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .prestige-content::-webkit-scrollbar-thumb {
+            background: #ddd;
+            border-radius: 4px;
+        }
+
+        .prestige-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .prestige-header h2 {
+            font-size: 2.5rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .prestige-header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .prestige-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #f0f0f0;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .prestige-close:hover {
+            background: #e0e0e0;
+        }
+
+        .prestige-shop-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 16px;
+            margin-top: 30px;
+        }
+
+        .prestige-upgrade {
+            background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+            border: 2px solid #667eea40;
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.2s;
+        }
+
+        .prestige-upgrade:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.2);
+        }
+
+        .prestige-upgrade-emoji {
+            font-size: 3rem;
+            margin-bottom: 12px;
+        }
+
+        .prestige-upgrade-name {
+            font-weight: 700;
+            color: #333;
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+        }
+
+        .prestige-upgrade-desc {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 16px;
+            line-height: 1.4;
+        }
+
+        .prestige-upgrade-cost {
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 12px;
+        }
+
+        .prestige-upgrade-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .prestige-upgrade-btn:hover:not(:disabled) {
+            transform: scale(1.02);
+        }
+
+        .prestige-upgrade-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 1200px) {
+            .game-container {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .game-container {
+                grid-template-columns: 1fr;
+            }
+            .prestige-shop-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="../../index.html" class="back-home">← Back to jax.fun</a>
+        <span class="game-name">Food Clicker</span>
+        <button onclick="resetGame()" style="background:#ff4444;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:600;font-size:0.8rem;">Reset Save</button>
+    </nav>
+
+    <div class="game-container">
+        <!-- Left Panel - Clicker -->
+        <div class="clicker-panel">
+            <div class="stats-row">
+                <div class="stat-box">
+                    <div class="stat-value" id="score">0</div>
+                    <div class="stat-label">total bites</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="perSecond">0</div>
+                    <div class="stat-label">per second</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="prestigeStars">0⭐</div>
+                    <div class="stat-label">prestige stars</div>
+                </div>
+            </div>
+            <div class="food-button-container">
+                <button class="food-button" id="foodButton">🍪</button>
+            </div>
+            <div class="current-food-name" id="currentFoodName">Cookie</div>
+            <button class="prestige-btn" id="prestigeBtn">Prestige (0⭐)</button>
+        </div>
+
+        <!-- Middle Panel - Foods Shop -->
+        <div class="shop-panel">
+            <div class="shop-header">🍔 Foods</div>
+            <div id="foodShop"></div>
+        </div>
+
+        <!-- Right Panel - Upgrades Shop -->
+        <div class="shop-panel">
+            <div class="shop-header">⚡ Upgrades</div>
+            <div id="upgradeShop"></div>
+        </div>
+
+        <!-- Far Right Panel - Backgrounds Shop -->
+        <div class="shop-panel">
+            <div class="shop-header">🎨 Backgrounds</div>
+            <div id="backgroundShop"></div>
+        </div>
+    </div>
+
+    <!-- Music Toggle Button -->
+    <button class="music-toggle" id="musicToggle">🔊</button>
+
+    <!-- Prestige Modal -->
+    <div class="prestige-modal" id="prestigeModal">
+        <div class="prestige-content">
+            <button class="prestige-close" id="prestigeClose">×</button>
+            <div class="prestige-header">
+                <h2>⭐ Prestige Shop ⭐</h2>
+                <p>Permanent upgrades that persist through resets!</p>
+                <p style="font-size: 1.5rem; margin-top: 10px; font-weight: 700;">Stars: <span id="modalStars">0</span>⭐</p>
+            </div>
+            <div class="prestige-shop-grid" id="prestigeShop"></div>
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        let score = 0;
+        let totalClicks = 0;
+        let clickPower = 1;
+        let currentFood = { emoji: '🍪', name: 'Cookie', value: 1 };
+        let musicPlaying = false; // OFF BY DEFAULT - no more CIA torture music
+        let bitesPerSecond = 0;
+        let incomeMultiplier = 1;
+        let currentBackground = { emoji: '🌈', name: 'Default', multiplier: 1, gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' };
+        let prestigeCount = 0;
+        let prestigeStars = 0;
+        let totalBitesEarned = 0;
+
+        // Available Foods (20 total - REBALANCED for better progression!)
+        const foods = [
+            { emoji: '🍪', name: 'Cookie', cost: 0, value: 1, owned: true },
+            { emoji: '🍕', name: 'Pizza', cost: 100, value: 2, owned: false },
+            { emoji: '🍔', name: 'Burger', cost: 500, value: 5, owned: false },
+            { emoji: '🌮', name: 'Taco', cost: 2000, value: 10, owned: false },
+            { emoji: '🍩', name: 'Donut', cost: 8000, value: 20, owned: false },
+            { emoji: '🍰', name: 'Cake', cost: 30000, value: 50, owned: false },
+            { emoji: '🍜', name: 'Ramen', cost: 100000, value: 150, owned: false },
+            { emoji: '🦞', name: 'Lobster', cost: 500000, value: 500, owned: false },
+            { emoji: '🍱', name: 'Bento', cost: 2000000, value: 1500, owned: false },
+            { emoji: '🍣', name: 'Sushi', cost: 10000000, value: 5000, owned: false },
+            { emoji: '🥐', name: 'Croissant', cost: 50000000, value: 20000, owned: false },
+            { emoji: '🥩', name: 'Steak', cost: 250000000, value: 75000, owned: false },
+            { emoji: '🍝', name: 'Pasta', cost: 1000000000, value: 250000, owned: false },
+            { emoji: '🍤', name: 'Tempura', cost: 5000000000, value: 1000000, owned: false },
+            { emoji: '🦑', name: 'Calamari', cost: 25000000000, value: 4000000, owned: false },
+            { emoji: '🦀', name: 'Crab', cost: 100000000000, value: 15000000, owned: false },
+            { emoji: '🍛', name: 'Curry', cost: 500000000000, value: 60000000, owned: false },
+            { emoji: '🥘', name: 'Paella', cost: 2500000000000, value: 250000000, owned: false },
+            { emoji: '🦐', name: 'Shrimp Feast', cost: 10000000000000, value: 1000000000, owned: false },
+            { emoji: '👑', name: 'Royal Banquet', cost: 50000000000000, value: 5000000000, owned: false }
+        ];
+
+        // Auto-clickers (10 total)
+        const autoClickers = [
+            { emoji: '👵', name: 'Grandma', cost: 100, bps: 1, count: 0 },
+            { emoji: '👨‍🍳', name: 'Chef', cost: 500, bps: 5, count: 0 },
+            { emoji: '🏪', name: 'Food Truck', cost: 2000, bps: 20, count: 0 },
+            { emoji: '🏭', name: 'Factory', cost: 10000, bps: 100, count: 0 },
+            { emoji: '🌍', name: 'Food Empire', cost: 50000, bps: 500, count: 0 },
+            { emoji: '🏰', name: 'Food Kingdom', cost: 250000, bps: 2500, count: 0 },
+            { emoji: '🚀', name: 'Space Farm', cost: 1000000, bps: 15000, count: 0 },
+            { emoji: '🌌', name: 'Galactic Chain', cost: 10000000, bps: 100000, count: 0 },
+            { emoji: '⏰', name: 'Time Machine', cost: 100000000, bps: 750000, count: 0 },
+            { emoji: '🌟', name: 'Reality Warper', cost: 1000000000, bps: 5000000, count: 0 }
+        ];
+
+        // Upgrades (12 total)
+        const upgrades = [
+            { emoji: '✋', name: 'Better Hands', cost: 200, multiplier: 2, bought: false },
+            { emoji: '💪', name: 'Strong Jaw', cost: 1000, multiplier: 2, bought: false },
+            { emoji: '🔥', name: 'Mega Bite', cost: 5000, multiplier: 3, bought: false },
+            { emoji: '⚡', name: 'Lightning Chomps', cost: 25000, multiplier: 5, bought: false },
+            { emoji: '💎', name: 'Diamond Teeth', cost: 100000, multiplier: 10, bought: false },
+            { emoji: '🍽️', name: 'Golden Fangs', cost: 500000, multiplier: 15, bought: false },
+            { emoji: '🌪️', name: 'Tornado Bite', cost: 2500000, multiplier: 25, bought: false },
+            { emoji: '🌋', name: 'Volcanic Appetite', cost: 10000000, multiplier: 50, bought: false },
+            { emoji: '☄️', name: 'Meteor Munch', cost: 50000000, multiplier: 100, bought: false },
+            { emoji: '🌠', name: 'Stellar Devour', cost: 250000000, multiplier: 250, bought: false },
+            { emoji: '🕳️', name: 'Black Hole Consumption', cost: 1000000000, multiplier: 500, bought: false },
+            { emoji: '🔮', name: 'Infinity Bite', cost: 10000000000, multiplier: 1000, bought: false }
+        ];
+
+        // Backgrounds (15 total)
+        const backgrounds = [
+            { emoji: '🌅', name: 'Sunset Vibes', cost: 300, multiplier: 1.5, gradient: 'linear-gradient(135deg, #FF6B6B 0%, #FFE66D 100%)', owned: false },
+            { emoji: '🌊', name: 'Ocean Breeze', cost: 1500, multiplier: 2, gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', owned: false },
+            { emoji: '🌲', name: 'Forest Calm', cost: 5000, multiplier: 3, gradient: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)', owned: false },
+            { emoji: '🔥', name: 'Lava Power', cost: 15000, multiplier: 5, gradient: 'linear-gradient(135deg, #eb3349 0%, #f45c43 100%)', owned: false },
+            { emoji: '🌌', name: 'Space Galaxy', cost: 40000, multiplier: 8, gradient: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7e22ce 100%)', owned: false },
+            { emoji: '🌈', name: 'Rainbow Rush', cost: 100000, multiplier: 15, gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 20%, #f093fb 40%, #f5576c 60%, #ffd93d 80%, #6bcf7f 100%)', owned: false },
+            { emoji: '💎', name: 'Diamond Luxury', cost: 500000, multiplier: 50, gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 50%, #d299c2 100%)', owned: false },
+            { emoji: '❄️', name: 'Arctic Freeze', cost: 2000000, multiplier: 100, gradient: 'linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%)', owned: false },
+            { emoji: '🌸', name: 'Cherry Blossom', cost: 10000000, multiplier: 250, gradient: 'linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%)', owned: false },
+            { emoji: '🎆', name: 'Firework Festival', cost: 50000000, multiplier: 500, gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 50%, #30cfd0 100%)', owned: false },
+            { emoji: '🌙', name: 'Moonlight Dream', cost: 250000000, multiplier: 1000, gradient: 'linear-gradient(135deg, #2e1753 0%, #4a00e0 50%, #8e2de2 100%)', owned: false },
+            { emoji: '🔮', name: 'Mystic Portal', cost: 1000000000, multiplier: 2500, gradient: 'linear-gradient(135deg, #bc4e9c 0%, #f80759 50%, #ff0844 100%)', owned: false },
+            { emoji: '☄️', name: 'Meteor Shower', cost: 5000000000, multiplier: 5000, gradient: 'linear-gradient(135deg, #ff0844 0%, #ffb199 50%, #ff0844 100%)', owned: false },
+            { emoji: '🌟', name: 'Supernova', cost: 25000000000, multiplier: 10000, gradient: 'linear-gradient(135deg, #fff200 0%, #ff6b00 50%, #ff0000 100%)', owned: false },
+            { emoji: '🌀', name: 'Dimensional Rift', cost: 100000000000, multiplier: 50000, gradient: 'linear-gradient(135deg, #000000 0%, #434343 20%, #000000 40%, #434343 60%, #000000 80%, #434343 100%)', owned: false }
+        ];
+
+        // Prestige Upgrades (30 total - much bigger and more expensive!)
+        const prestigeUpgrades = [
+            // Tier 1: Early game (1-5 stars)
+            { id: 'clickBoost', emoji: '👆', name: 'Click Boost', desc: 'Double click power forever', cost: 1, bought: false, effect: () => clickPower *= 2 },
+            { id: 'autoBoost', emoji: '🏭', name: 'Auto Boost', desc: '2x all auto-clicker production', cost: 2, bought: false, effect: () => {} },
+            { id: 'starterPack', emoji: '🎁', name: 'Starter Pack', desc: 'Start with 1000 bites after prestige', cost: 3, bought: false, effect: () => {} },
+            { id: 'cheapFood', emoji: '💰', name: 'Food Discount', desc: '25% off all foods', cost: 4, bought: false, effect: () => {} },
+            { id: 'megaClick', emoji: '💥', name: 'Mega Click', desc: '5x click power', cost: 5, bought: false, effect: () => clickPower *= 5 },
+
+            // Tier 2: Mid game (6-15 stars)
+            { id: 'megaAuto', emoji: '⚙️', name: 'Mega Auto', desc: '5x auto-clicker production', cost: 8, bought: false, effect: () => {} },
+            { id: 'richStart', emoji: '💸', name: 'Rich Start', desc: 'Start with 50K bites', cost: 10, bought: false, effect: () => {} },
+            { id: 'ultraClick', emoji: '🌟', name: 'Ultra Click', desc: '10x click power', cost: 12, bought: false, effect: () => clickPower *= 10 },
+            { id: 'hyperAuto', emoji: '🚀', name: 'Hyper Auto', desc: '10x auto production', cost: 15, bought: false, effect: () => {} },
+
+            // Tier 3: Advanced (16-40 stars)
+            { id: 'bgBoost', emoji: '🎨', name: 'Background Power', desc: '2x all background multipliers', cost: 20, bought: false, effect: () => {} },
+            { id: 'godClick', emoji: '⚡', name: 'God Click', desc: '25x click power', cost: 25, bought: false, effect: () => clickPower *= 25 },
+            { id: 'infiniteStart', emoji: '♾️', name: 'Infinite Start', desc: 'Start with 1M bites', cost: 30, bought: false, effect: () => {} },
+            { id: 'masterAuto', emoji: '👑', name: 'Master Auto', desc: '50x auto production', cost: 35, bought: false, effect: () => {} },
+            { id: 'supremeClick', emoji: '💎', name: 'Supreme Click', desc: '100x click power', cost: 40, bought: false, effect: () => clickPower *= 100 },
+
+            // Tier 4: Expert (50-100 stars)
+            { id: 'cosmicBoost', emoji: '🌌', name: 'Cosmic Boost', desc: '5x ALL income sources', cost: 50, bought: false, effect: () => {} },
+            { id: 'ultraAuto', emoji: '🌀', name: 'Ultra Auto', desc: '100x auto production', cost: 60, bought: false, effect: () => {} },
+            { id: 'titanClick', emoji: '🔱', name: 'Titan Click', desc: '250x click power', cost: 75, bought: false, effect: () => clickPower *= 250 },
+            { id: 'megaStart', emoji: '🎆', name: 'Mega Start', desc: 'Start with 100M bites', cost: 80, bought: false, effect: () => {} },
+            { id: 'bgMega', emoji: '🌈', name: 'Background Mega', desc: '5x all background multipliers', cost: 90, bought: false, effect: () => {} },
+            { id: 'ultimateStart', emoji: '🔥', name: 'Ultimate Start', desc: 'Start with 1B bites', cost: 100, bought: false, effect: () => {} },
+
+            // Tier 5: Master (125-250 stars)
+            { id: 'omniBoost', emoji: '✨', name: 'Omni Boost', desc: '10x ALL income sources', cost: 125, bought: false, effect: () => {} },
+            { id: 'infiniteClick', emoji: '∞', name: 'Infinite Click', desc: '500x click power', cost: 150, bought: false, effect: () => clickPower *= 500 },
+            { id: 'godAuto', emoji: '👁️', name: 'God Auto', desc: '500x auto production', cost: 175, bought: false, effect: () => {} },
+            { id: 'hyperStart', emoji: '💫', name: 'Hyper Start', desc: 'Start with 100B bites', cost: 200, bought: false, effect: () => {} },
+            { id: 'realityBend', emoji: '🌐', name: 'Reality Bender', desc: '25x ALL income sources', cost: 250, bought: false, effect: () => {} },
+
+            // Tier 6: Legendary (300-500 stars)
+            { id: 'transcendClick', emoji: '🔮', name: 'Transcendent Click', desc: '1000x click power', cost: 300, bought: false, effect: () => clickPower *= 1000 },
+            { id: 'universeAuto', emoji: '🪐', name: 'Universe Auto', desc: '2500x auto production', cost: 400, bought: false, effect: () => {} },
+            { id: 'absoluteStart', emoji: '⚡', name: 'Absolute Start', desc: 'Start with 10T bites', cost: 450, bought: false, effect: () => {} },
+            { id: 'omnipotence', emoji: '👑', name: 'Omnipotence', desc: '100x ALL income sources', cost: 500, bought: false, effect: () => {} },
+
+            // Tier 7: Divine (750-1000 stars)
+            { id: 'divineClick', emoji: '☀️', name: 'Divine Click', desc: '5000x click power', cost: 750, bought: false, effect: () => clickPower *= 5000 },
+            { id: 'eternityBoost', emoji: '⏳', name: 'Eternity Boost', desc: '1000x ALL income sources', cost: 1000, bought: false, effect: () => {} }
+        ];
+
+        // Audio Elements
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        let backgroundMusic = null;
+        let biteSounds = []; // Array of bite sounds
+        let usingSynthesizedAudio = false;
+        let musicInterval = null;
+
+        function initializeAudio() {
+            // Try to load real audio files first
+            backgroundMusic = new Audio('lofi-music.mp3');
+            backgroundMusic.loop = true;
+            backgroundMusic.volume = 0.3;
+
+            // Load multiple bite sounds
+            const biteFiles = ['bite1.mp3', 'bite2.mp3', 'bite-sound.mp3'];
+            biteFiles.forEach(file => {
+                const sound = new Audio(file);
+                sound.volume = 0.35; // Comfortable volume
+                biteSounds.push(sound);
+            });
+
+            // If files don't exist, fall back to synthesized audio
+            backgroundMusic.addEventListener('error', () => {
+                console.log('🎵 Using synthesized music (download lofi-music.mp3 for better quality)');
+                usingSynthesizedAudio = true;
+            });
+        }
+
+        function startBackgroundMusic() {
+            if (!backgroundMusic) {
+                initializeAudio();
+            }
+
+            if (backgroundMusic && musicPlaying) {
+                backgroundMusic.play().catch(e => {
+                    console.log('No music file found. Add lofi-music.mp3 to enable background music.');
+                });
+            }
+        }
+
+        function startSynthesizedMusic() {
+            if (musicInterval) return;
+
+            // MUCH BETTER LOFI - Authentic lofi hip hop sound
+            // Progression: Am7 -> Fmaj7 -> Cmaj7 -> G7 (classic lofi progression)
+            const chords = [
+                // Am7: A, C, E, G
+                { bass: 110, notes: [220, 261.63, 329.63, 392] },
+                // Fmaj7: F, A, C, E
+                { bass: 87.31, notes: [174.61, 220, 261.63, 329.63] },
+                // Cmaj7: C, E, G, B
+                { bass: 65.41, notes: [130.81, 164.81, 196, 246.94] },
+                // G7: G, B, D, F
+                { bass: 98, notes: [196, 246.94, 293.66, 349.23] }
+            ];
+
+            // Pentatonic melody in A minor (more variety)
+            const melodies = [
+                [220, 261.63, 293.66, 329.63, 220, 293.66, 261.63, 220],
+                [329.63, 293.66, 261.63, 220, 261.63, 329.63, 392, 329.63],
+                [392, 440, 392, 329.63, 293.66, 329.63, 261.63, 293.66],
+                [261.63, 293.66, 329.63, 392, 329.63, 293.66, 220, 261.63]
+            ];
+
+            let chordIdx = 0;
+            let melodyIdx = 0;
+            let noteIdx = 0;
+            let barCount = 0;
+
+            function playBeat() {
+                if (!musicPlaying) {
+                    setTimeout(playBeat, 100);
+                    return;
+                }
+
+                const now = audioContext.currentTime;
+                const chord = chords[chordIdx];
+                const currentMelody = melodies[chordIdx];
+
+                // BASS (deep lofi bass)
+                const bass = audioContext.createOscillator();
+                const bassGain = audioContext.createGain();
+                bass.type = 'sine';
+                bass.frequency.value = chord.bass;
+                bassGain.gain.setValueAtTime(0.12, now);
+                bassGain.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
+                bass.connect(bassGain);
+                bassGain.connect(audioContext.destination);
+                bass.start(now);
+                bass.stop(now + 1.5);
+
+                // CHORD PAD (warm pads with slight detuning for vinyl effect)
+                chord.notes.forEach((freq, i) => {
+                    const osc = audioContext.createOscillator();
+                    const gain = audioContext.createGain();
+                    const filter = audioContext.createBiquadFilter();
+
+                    osc.type = 'sine';
+                    osc.frequency.value = freq * (1 + (Math.random() * 0.002 - 0.001)); // Slight detune
+                    filter.type = 'lowpass';
+                    filter.frequency.value = 2000 + (Math.random() * 500);
+
+                    gain.gain.setValueAtTime(0.008, now + i * 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 2);
+
+                    osc.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(audioContext.destination);
+                    osc.start(now + i * 0.02);
+                    osc.stop(now + 2);
+                });
+
+                // MELODY (plays every 2 beats)
+                if (noteIdx % 2 === 0) {
+                    const mel = audioContext.createOscillator();
+                    const melGain = audioContext.createGain();
+                    const melFilter = audioContext.createBiquadFilter();
+
+                    mel.type = 'triangle';
+                    mel.frequency.value = currentMelody[noteIdx % currentMelody.length];
+                    melFilter.type = 'lowpass';
+                    melFilter.frequency.value = 3000;
+
+                    melGain.gain.setValueAtTime(0.035, now);
+                    melGain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+
+                    mel.connect(melFilter);
+                    melFilter.connect(melGain);
+                    melGain.connect(audioContext.destination);
+                    mel.start(now);
+                    mel.stop(now + 0.8);
+                }
+
+                // KICK DRUM (on beats 1 and 3)
+                if (noteIdx % 4 === 0 || noteIdx % 4 === 2) {
+                    const kick = audioContext.createOscillator();
+                    const kickGain = audioContext.createGain();
+                    kick.type = 'sine';
+                    kick.frequency.setValueAtTime(150, now);
+                    kick.frequency.exponentialRampToValueAtTime(40, now + 0.1);
+                    kickGain.gain.setValueAtTime(0.3, now);
+                    kickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+                    kick.connect(kickGain);
+                    kickGain.connect(audioContext.destination);
+                    kick.start(now);
+                    kick.stop(now + 0.1);
+                }
+
+                // SNARE (on beats 2 and 4)
+                if (noteIdx % 4 === 1 || noteIdx % 4 === 3) {
+                    const snare = audioContext.createBuffer(1, audioContext.sampleRate * 0.08, audioContext.sampleRate);
+                    const snareData = snare.getChannelData(0);
+                    for (let i = 0; i < snare.length; i++) {
+                        snareData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioContext.sampleRate * 0.015));
+                    }
+                    const snareSource = audioContext.createBufferSource();
+                    snareSource.buffer = snare;
+                    const snareFilter = audioContext.createBiquadFilter();
+                    snareFilter.type = 'highpass';
+                    snareFilter.frequency.value = 1500;
+                    const snareGain = audioContext.createGain();
+                    snareGain.gain.value = 0.08;
+                    snareSource.connect(snareFilter);
+                    snareFilter.connect(snareGain);
+                    snareGain.connect(audioContext.destination);
+                    snareSource.start(now);
+                }
+
+                // HI-HAT (every beat, quieter)
+                const hihat = audioContext.createBuffer(1, audioContext.sampleRate * 0.03, audioContext.sampleRate);
+                const hihatData = hihat.getChannelData(0);
+                for (let i = 0; i < hihat.length; i++) {
+                    hihatData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioContext.sampleRate * 0.005));
+                }
+                const hihatSource = audioContext.createBufferSource();
+                hihatSource.buffer = hihat;
+                const hihatFilter = audioContext.createBiquadFilter();
+                hihatFilter.type = 'highpass';
+                hihatFilter.frequency.value = 8000;
+                const hihatGain = audioContext.createGain();
+                hihatGain.gain.value = 0.012;
+                hihatSource.connect(hihatFilter);
+                hihatFilter.connect(hihatGain);
+                hihatGain.connect(audioContext.destination);
+                hihatSource.start(now);
+
+                noteIdx++;
+                // Change chord every 8 beats (2 bars)
+                if (noteIdx % 8 === 0) {
+                    chordIdx = (chordIdx + 1) % chords.length;
+                    barCount++;
+                }
+
+                setTimeout(playBeat, 545); // ~110 BPM
+            }
+
+            playBeat();
+            musicInterval = true;
+        }
+
+        function playBiteSound() {
+            if (biteSounds.length === 0) {
+                initializeAudio();
+            }
+
+            if (biteSounds.length > 0) {
+                // Pick a random bite sound
+                const randomSound = biteSounds[Math.floor(Math.random() * biteSounds.length)];
+                const sound = randomSound.cloneNode();
+                sound.volume = 0.35; // Comfortable volume
+                sound.play().catch((err) => {
+                    console.log('Bite sound error:', err);
+                    // Only use synthesized as absolute last resort
+                    playSynthesizedBite();
+                });
+            } else {
+                playSynthesizedBite();
+            }
+        }
+
+        function playSynthesizedBite() {
+            const now = audioContext.currentTime;
+
+            // Simple crunch sound
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(800, now);
+            osc.frequency.exponentialRampToValueAtTime(200, now + 0.08);
+            gain.gain.setValueAtTime(0.15, now); // Comfortable volume
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+            osc.connect(gain);
+            gain.connect(audioContext.destination);
+            osc.start(now);
+            osc.stop(now + 0.08);
+        }
+
+        function createFoodParticle(emoji) {
+            const particle = document.createElement('div');
+            particle.className = 'food-particle';
+            particle.textContent = emoji;
+            const button = document.getElementById('foodButton');
+            const rect = button.getBoundingClientRect();
+            const randomX = (Math.random() - 0.5) * 100;
+            particle.style.left = `${rect.left + rect.width / 2 + randomX}px`;
+            particle.style.top = `${rect.top + rect.height / 2}px`;
+            document.body.appendChild(particle);
+            setTimeout(() => particle.remove(), 1000);
+        }
+
+        // SAVE SYSTEM - Your progress is automatically saved!
+        function saveGame() {
+            const saveData = {
+                score,
+                totalClicks,
+                clickPower,
+                currentFood,
+                currentBackground,
+                bitesPerSecond,
+                incomeMultiplier,
+                prestigeCount,
+                prestigeStars,
+                totalBitesEarned,
+                foods: foods.map(f => ({ owned: f.owned })),
+                autoClickers: autoClickers.map(a => ({ count: a.count })),
+                upgrades: upgrades.map(u => ({ bought: u.bought })),
+                backgrounds: backgrounds.map(b => ({ owned: b.owned })),
+                prestigeUpgrades: prestigeUpgrades.map(p => ({ bought: p.bought }))
+            };
+            localStorage.setItem('foodClickerSave', JSON.stringify(saveData));
+        }
+
+        function loadGame() {
+            const saveData = localStorage.getItem('foodClickerSave');
+            if (!saveData) return false;
+
+            try {
+                const data = JSON.parse(saveData);
+                score = data.score || 0;
+                totalClicks = data.totalClicks || 0;
+                clickPower = data.clickPower || 1;
+                currentFood = data.currentFood || foods[0];
+                currentBackground = data.currentBackground || { emoji: '🌈', name: 'Default', multiplier: 1, gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' };
+                bitesPerSecond = data.bitesPerSecond || 0;
+                incomeMultiplier = data.incomeMultiplier || 1;
+                prestigeCount = data.prestigeCount || 0;
+                prestigeStars = data.prestigeStars || 0;
+                totalBitesEarned = data.totalBitesEarned || 0;
+
+                // Restore purchases
+                if (data.foods) {
+                    data.foods.forEach((f, i) => {
+                        if (foods[i]) foods[i].owned = f.owned;
+                    });
+                }
+                if (data.autoClickers) {
+                    data.autoClickers.forEach((a, i) => {
+                        if (autoClickers[i]) autoClickers[i].count = a.count;
+                    });
+                }
+                if (data.upgrades) {
+                    data.upgrades.forEach((u, i) => {
+                        if (upgrades[i]) upgrades[i].bought = u.bought;
+                    });
+                }
+                if (data.backgrounds) {
+                    data.backgrounds.forEach((b, i) => {
+                        if (backgrounds[i]) backgrounds[i].owned = b.owned;
+                    });
+                }
+                if (data.prestigeUpgrades) {
+                    data.prestigeUpgrades.forEach((p, i) => {
+                        if (prestigeUpgrades[i]) prestigeUpgrades[i].bought = p.bought;
+                    });
+                }
+
+                // Update UI
+                document.getElementById('foodButton').textContent = currentFood.emoji;
+                document.getElementById('currentFoodName').textContent = currentFood.name;
+
+                // Apply prestige effects
+                prestigeUpgrades.forEach(u => {
+                    if (u.bought && u.effect) u.effect();
+                });
+
+                // Restore background
+                if (currentBackground) {
+                    document.body.style.background = currentBackground.gradient;
+                    incomeMultiplier = currentBackground.multiplier;
+                }
+
+                return true;
+            } catch (e) {
+                console.error('Failed to load save:', e);
+                return false;
+            }
+        }
+
+        function resetGame() {
+            if (confirm('Are you sure you want to DELETE ALL PROGRESS? This cannot be undone!')) {
+                localStorage.removeItem('foodClickerSave');
+                location.reload();
+            }
+        }
+
+        function formatNumber(num) {
+            if (num >= 1000000000000) return (num / 1000000000000).toFixed(2) + 'T';
+            if (num >= 1000000000) return (num / 1000000000).toFixed(2) + 'B';
+            if (num >= 1000000) return (num / 1000000).toFixed(2) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(2) + 'K';
+            return Math.floor(num);
+        }
+
+        // Multipliers that affect ONLY auto-clickers
+        function getAutoClickerMultiplier() {
+            let mult = 1;
+            if (prestigeUpgrades.find(u => u.id === 'autoBoost' && u.bought)) mult *= 2;
+            if (prestigeUpgrades.find(u => u.id === 'megaAuto' && u.bought)) mult *= 5;
+            if (prestigeUpgrades.find(u => u.id === 'hyperAuto' && u.bought)) mult *= 10;
+            if (prestigeUpgrades.find(u => u.id === 'masterAuto' && u.bought)) mult *= 50;
+            if (prestigeUpgrades.find(u => u.id === 'ultraAuto' && u.bought)) mult *= 100;
+            if (prestigeUpgrades.find(u => u.id === 'godAuto' && u.bought)) mult *= 500;
+            if (prestigeUpgrades.find(u => u.id === 'universeAuto' && u.bought)) mult *= 2500;
+            return mult;
+        }
+
+        // Multipliers that affect EVERYTHING (backgrounds + "ALL income" prestige upgrades)
+        function getGlobalMultiplier() {
+            let mult = incomeMultiplier; // Background multiplier
+            if (prestigeUpgrades.find(u => u.id === 'bgBoost' && u.bought)) mult *= 2;
+            if (prestigeUpgrades.find(u => u.id === 'bgMega' && u.bought)) mult *= 5;
+            if (prestigeUpgrades.find(u => u.id === 'cosmicBoost' && u.bought)) mult *= 5;
+            if (prestigeUpgrades.find(u => u.id === 'omniBoost' && u.bought)) mult *= 10;
+            if (prestigeUpgrades.find(u => u.id === 'realityBend' && u.bought)) mult *= 25;
+            if (prestigeUpgrades.find(u => u.id === 'omnipotence' && u.bought)) mult *= 100;
+            if (prestigeUpgrades.find(u => u.id === 'eternityBoost' && u.bought)) mult *= 1000;
+            return mult;
+        }
+
+        function calculateBPS() {
+            bitesPerSecond = 0;
+            const autoMult = getAutoClickerMultiplier();
+            const globalMult = getGlobalMultiplier();
+            autoClickers.forEach(clicker => {
+                bitesPerSecond += clicker.bps * clicker.count * autoMult;
+            });
+            bitesPerSecond *= globalMult;
+            document.getElementById('perSecond').textContent = formatNumber(bitesPerSecond) + '⏱️';
+        }
+
+        function updateScore() {
+            document.getElementById('score').textContent = formatNumber(score) + '🍽️';
+            document.getElementById('prestigeStars').textContent = prestigeStars + '⭐';
+            updatePrestigeButton();
+        }
+
+        function updatePrestigeButton() {
+            const starsEarned = Math.floor(Math.sqrt(totalBitesEarned / 10000)) - prestigeStars;
+            const nextPrestigeCost = Math.pow(10, prestigeCount + 5);
+            const btn = document.getElementById('prestigeBtn');
+            if (totalBitesEarned >= nextPrestigeCost) {
+                btn.textContent = `Prestige (+${starsEarned}⭐)`;
+                btn.disabled = false;
+            } else {
+                btn.textContent = `Prestige (${formatNumber(nextPrestigeCost)}🍽️ needed)`;
+                btn.disabled = true;
+            }
+        }
+
+        function doPrestige() {
+            const starsEarned = Math.floor(Math.sqrt(totalBitesEarned / 10000)) - prestigeStars;
+            if (starsEarned <= 0) return;
+
+            prestigeStars += starsEarned;
+            prestigeCount++;
+
+            // Reset game state
+            score = 0;
+            clickPower = 1;
+            incomeMultiplier = 1;
+            currentFood = foods[0];
+            currentBackground = { emoji: '🌈', name: 'Default', multiplier: 1, gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' };
+            document.getElementById('foodButton').textContent = '🍪';
+            document.getElementById('currentFoodName').textContent = 'Cookie';
+            document.body.style.background = currentBackground.gradient;
+
+            // Reset purchases
+            foods.forEach(f => {
+                if (f.cost > 0) f.owned = false;
+            });
+            autoClickers.forEach(a => a.count = 0);
+            upgrades.forEach(u => u.bought = false);
+            backgrounds.forEach(b => b.owned = false);
+
+            // Apply prestige bonuses
+            prestigeUpgrades.forEach(u => {
+                if (u.bought && u.effect) u.effect();
+            });
+
+            // Starting bites from upgrades
+            if (prestigeUpgrades.find(u => u.id === 'starterPack' && u.bought)) score = 1000;
+            if (prestigeUpgrades.find(u => u.id === 'richStart' && u.bought)) score = 50000;
+            if (prestigeUpgrades.find(u => u.id === 'infiniteStart' && u.bought)) score = 1000000;
+            if (prestigeUpgrades.find(u => u.id === 'megaStart' && u.bought)) score = 100000000;
+            if (prestigeUpgrades.find(u => u.id === 'ultimateStart' && u.bought)) score = 1000000000;
+            if (prestigeUpgrades.find(u => u.id === 'hyperStart' && u.bought)) score = 100000000000;
+            if (prestigeUpgrades.find(u => u.id === 'absoluteStart' && u.bought)) score = 10000000000000;
+
+            calculateBPS();
+            updateScore();
+            renderShops();
+            saveGame(); // Save after prestige
+        }
+
+        // Click Handler
+        document.getElementById('foodButton').addEventListener('click', (e) => {
+            let earnedBites = currentFood.value * clickPower;
+            earnedBites *= getGlobalMultiplier(); // Backgrounds affect clicks too!
+            score += earnedBites;
+            totalBitesEarned += earnedBites;
+            totalClicks++;
+            updateScore();
+            playBiteSound();
+            createFoodParticle(currentFood.emoji);
+            renderShops();
+        });
+
+        // Render Food Shop
+        function renderFoodShop() {
+            const shopContainer = document.getElementById('foodShop');
+            shopContainer.innerHTML = '';
+
+            foods.forEach((food) => {
+                const item = document.createElement('div');
+                const isEquipped = currentFood.emoji === food.emoji;
+                item.className = 'shop-item' + (food.owned ? '' : ' locked');
+
+                let cost = food.cost;
+                if (prestigeUpgrades.find(u => u.id === 'cheapFood' && u.bought)) {
+                    cost = Math.floor(cost * 0.75);
+                }
+
+                const canAfford = score >= cost;
+                let buttonText, buttonClass;
+
+                if (food.owned) {
+                    buttonText = isEquipped ? 'Equipped' : 'Equip';
+                    buttonClass = isEquipped ? 'owned' : '';
+                } else {
+                    buttonText = canAfford ? 'Buy' : `${formatNumber(cost)}🍽️`;
+                    buttonClass = '';
+                }
+
+                item.innerHTML = `
+                    <div class="shop-item-emoji">${food.emoji}</div>
+                    <div class="shop-item-name">${food.name}</div>
+                    <div class="shop-item-details">${formatNumber(food.value * clickPower * getGlobalMultiplier())} bites per click</div>
+                    <button class="shop-buy-btn ${buttonClass}"
+                            ${(!food.owned && !canAfford) || isEquipped ? 'disabled' : ''}>
+                        ${buttonText}
+                    </button>
+                `;
+
+                const button = item.querySelector('.shop-buy-btn');
+                button.addEventListener('click', () => {
+                    if (food.owned && !isEquipped) {
+                        currentFood = food;
+                        document.getElementById('foodButton').textContent = food.emoji;
+                        document.getElementById('currentFoodName').textContent = food.name;
+                        renderShops();
+                    } else if (score >= cost) {
+                        score -= cost;
+                        food.owned = true;
+                        updateScore();
+                        renderShops();
+                    }
+                });
+
+                shopContainer.appendChild(item);
+            });
+        }
+
+        // Render Upgrade Shop
+        function renderUpgradeShop() {
+            const shopContainer = document.getElementById('upgradeShop');
+            shopContainer.innerHTML = '';
+
+            // Auto-clickers section
+            const autoSection = document.createElement('div');
+            autoSection.className = 'shop-section';
+            autoSection.innerHTML = '<div class="shop-section-title">Auto-Clickers</div>';
+
+            autoClickers.forEach((clicker) => {
+                const cost = Math.floor(clicker.cost * Math.pow(1.15, clicker.count));
+                const canAfford = score >= cost;
+
+                const item = document.createElement('div');
+                item.className = 'shop-item';
+
+                item.innerHTML = `
+                    <div class="shop-item-emoji">${clicker.emoji}</div>
+                    <div class="shop-item-name">${clicker.name} (${clicker.count})</div>
+                    <div class="shop-item-details">+${formatNumber(clicker.bps * getAutoClickerMultiplier() * getGlobalMultiplier())} bites/sec</div>
+                    <button class="shop-buy-btn upgrade"
+                            ${!canAfford ? 'disabled' : ''}>
+                        ${formatNumber(cost)}🍽️
+                    </button>
+                `;
+
+                const button = item.querySelector('.shop-buy-btn');
+                button.addEventListener('click', () => {
+                    if (score >= cost) {
+                        score -= cost;
+                        clicker.count++;
+                        calculateBPS();
+                        updateScore();
+                        renderShops();
+                    }
+                });
+
+                autoSection.appendChild(item);
+            });
+
+            shopContainer.appendChild(autoSection);
+
+            // Power upgrades section
+            const upgradeSection = document.createElement('div');
+            upgradeSection.className = 'shop-section';
+            upgradeSection.innerHTML = '<div class="shop-section-title">Click Power</div>';
+
+            upgrades.forEach((upgrade) => {
+                const canAfford = score >= upgrade.cost;
+
+                const item = document.createElement('div');
+                item.className = 'shop-item' + (upgrade.bought ? ' locked' : '');
+
+                item.innerHTML = `
+                    <div class="shop-item-emoji">${upgrade.emoji}</div>
+                    <div class="shop-item-name">${upgrade.name}</div>
+                    <div class="shop-item-details">${upgrade.multiplier}x click power</div>
+                    <button class="shop-buy-btn upgrade"
+                            ${upgrade.bought || !canAfford ? 'disabled' : ''}>
+                        ${upgrade.bought ? 'Owned' : formatNumber(upgrade.cost) + '🍽️'}
+                    </button>
+                `;
+
+                const button = item.querySelector('.shop-buy-btn');
+                button.addEventListener('click', () => {
+                    if (!upgrade.bought && score >= upgrade.cost) {
+                        score -= upgrade.cost;
+                        upgrade.bought = true;
+                        clickPower *= upgrade.multiplier;
+                        updateScore();
+                        renderShops();
+                    }
+                });
+
+                upgradeSection.appendChild(item);
+            });
+
+            shopContainer.appendChild(upgradeSection);
+        }
+
+        // Render Background Shop
+        function renderBackgroundShop() {
+            const shopContainer = document.getElementById('backgroundShop');
+            shopContainer.innerHTML = '';
+
+            backgrounds.forEach((bg) => {
+                const isEquipped = currentBackground.name === bg.name;
+                const canAfford = score >= bg.cost;
+
+                const item = document.createElement('div');
+                item.className = 'shop-item' + (bg.owned ? '' : ' locked');
+
+                let buttonText, buttonClass;
+
+                if (bg.owned) {
+                    buttonText = isEquipped ? 'Equipped' : 'Equip';
+                    buttonClass = isEquipped ? 'owned' : '';
+                } else {
+                    buttonText = canAfford ? 'Buy' : `${formatNumber(bg.cost)}🍽️`;
+                    buttonClass = 'upgrade';
+                }
+
+                item.innerHTML = `
+                    <div class="background-preview" style="background: ${bg.gradient}; margin: 0 auto;"></div>
+                    <div class="shop-item-name" style="margin-top: 10px;">${bg.name}</div>
+                    <div class="shop-item-details">${bg.multiplier}x income multiplier</div>
+                    <button class="shop-buy-btn ${buttonClass}"
+                            ${(!bg.owned && !canAfford) || isEquipped ? 'disabled' : ''}>
+                        ${buttonText}
+                    </button>
+                `;
+
+                const button = item.querySelector('.shop-buy-btn');
+                button.addEventListener('click', () => {
+                    if (bg.owned && !isEquipped) {
+                        // Equip this background
+                        currentBackground = bg;
+                        document.body.style.background = bg.gradient;
+                        incomeMultiplier = bg.multiplier;
+                        calculateBPS();
+                        updateScore();
+                        renderShops();
+                        saveGame();
+                    } else if (!bg.owned && score >= bg.cost) {
+                        // Buy this background
+                        score -= bg.cost;
+                        bg.owned = true;
+                        updateScore();
+                        renderShops();
+                        saveGame();
+                    }
+                });
+
+                shopContainer.appendChild(item);
+            });
+        }
+
+        // Render Prestige Shop
+        function renderPrestigeShop() {
+            const shopContainer = document.getElementById('prestigeShop');
+            shopContainer.innerHTML = '';
+            document.getElementById('modalStars').textContent = prestigeStars;
+
+            prestigeUpgrades.forEach((upgrade) => {
+                const canAfford = prestigeStars >= upgrade.cost;
+
+                const item = document.createElement('div');
+                item.className = 'prestige-upgrade';
+
+                item.innerHTML = `
+                    <div class="prestige-upgrade-emoji">${upgrade.emoji}</div>
+                    <div class="prestige-upgrade-name">${upgrade.name}</div>
+                    <div class="prestige-upgrade-desc">${upgrade.desc}</div>
+                    <div class="prestige-upgrade-cost">Cost: ${upgrade.cost}⭐</div>
+                    <button class="prestige-upgrade-btn" ${upgrade.bought || !canAfford ? 'disabled' : ''}>
+                        ${upgrade.bought ? 'Owned' : 'Buy'}
+                    </button>
+                `;
+
+                const button = item.querySelector('.prestige-upgrade-btn');
+                button.addEventListener('click', () => {
+                    if (!upgrade.bought && prestigeStars >= upgrade.cost) {
+                        prestigeStars -= upgrade.cost;
+                        upgrade.bought = true;
+                        updateScore();
+                        renderPrestigeShop();
+                    }
+                });
+
+                shopContainer.appendChild(item);
+            });
+        }
+
+        function renderShops() {
+            renderFoodShop();
+            renderUpgradeShop();
+            renderBackgroundShop();
+        }
+
+        // Music Toggle
+        document.getElementById('musicToggle').addEventListener('click', () => {
+            musicPlaying = !musicPlaying;
+            document.getElementById('musicToggle').textContent = musicPlaying ? '🔊' : '🔇';
+
+            if (!backgroundMusic) {
+                initializeAudio();
+            }
+
+            if (musicPlaying) {
+                if (backgroundMusic && !usingSynthesizedAudio) {
+                    backgroundMusic.play().catch(() => {
+                        usingSynthesizedAudio = true;
+                        startSynthesizedMusic();
+                    });
+                } else {
+                    startSynthesizedMusic();
+                }
+            } else {
+                if (backgroundMusic) backgroundMusic.pause();
+                musicInterval = null; // Stop synthesized music
+            }
+        });
+
+        // Prestige Button
+        document.getElementById('prestigeBtn').addEventListener('click', doPrestige);
+
+        // Prestige Modal
+        document.getElementById('prestigeStars').addEventListener('click', () => {
+            document.getElementById('prestigeModal').classList.add('active');
+            renderPrestigeShop();
+        });
+
+        document.getElementById('prestigeClose').addEventListener('click', () => {
+            document.getElementById('prestigeModal').classList.remove('active');
+        });
+
+        // Close modal when clicking outside
+        document.getElementById('prestigeModal').addEventListener('click', (e) => {
+            if (e.target.id === 'prestigeModal') {
+                document.getElementById('prestigeModal').classList.remove('active');
+            }
+        });
+
+        // Passive income loop
+        setInterval(() => {
+            if (bitesPerSecond > 0) {
+                const earned = bitesPerSecond / 10;
+                score += earned;
+                totalBitesEarned += earned;
+                updateScore();
+            }
+        }, 100);
+
+        // Initialize
+        initializeAudio();
+
+        // Load saved game
+        const loaded = loadGame();
+        if (loaded) {
+            console.log('✅ Game loaded from save!');
+        }
+
+        renderShops();
+        calculateBPS();
+        updateScore();
+
+        // Set music toggle icon
+        document.getElementById('musicToggle').textContent = musicPlaying ? '🔊' : '🔇';
+
+        // Auto-save every 10 seconds
+        setInterval(saveGame, 10000);
+
+        // Resume audio context on first user interaction
+        document.addEventListener('click', () => {
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+        }, { once: true });
+    </script>
+</body>
+</html>

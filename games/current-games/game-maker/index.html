@@ -1,0 +1,1321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Maker - jax.fun</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: #0a0a0f;
+            min-height: 100vh;
+            color: #00ff88;
+            overflow-x: hidden;
+        }
+
+        /* Matrix-style background */
+        .matrix-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            opacity: 0.05;
+            z-index: 0;
+            background:
+                linear-gradient(90deg, #00ff88 1px, transparent 1px) 0 0 / 20px 20px,
+                linear-gradient(#00ff88 1px, transparent 1px) 0 0 / 20px 20px;
+        }
+
+        /* Navigation */
+        .navbar {
+            padding: 15px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 255, 136, 0.05);
+            border-bottom: 1px solid #00ff8833;
+            position: relative;
+            z-index: 100;
+        }
+        .back-home {
+            color: #00ff88;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 700;
+            transition: all 0.2s;
+            opacity: 0.7;
+        }
+        .back-home:hover { opacity: 1; text-shadow: 0 0 10px #00ff88; }
+        .game-name {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #00ff88;
+            opacity: 0.7;
+        }
+
+        /* Main Layout */
+        .main-container {
+            display: grid;
+            grid-template-columns: 300px 1fr 250px;
+            height: calc(100vh - 51px);
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Left Panel - AI Generator */
+        .left-panel {
+            background: rgba(0, 20, 10, 0.8);
+            border-right: 1px solid #00ff8833;
+            display: flex;
+            flex-direction: column;
+        }
+        .panel-header {
+            padding: 15px;
+            border-bottom: 1px solid #00ff8833;
+            font-weight: 700;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .panel-header::before {
+            content: '>';
+            color: #ff0080;
+            animation: blink 1s infinite;
+        }
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        /* Terminal Input */
+        .terminal-area {
+            flex: 1;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+        .terminal-output {
+            flex: 1;
+            overflow-y: auto;
+            font-size: 0.75rem;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            color: #00ff8888;
+        }
+        .terminal-output .success { color: #00ff88; }
+        .terminal-output .error { color: #ff0080; }
+        .terminal-output .info { color: #00aaff; }
+        .terminal-line { margin-bottom: 5px; }
+
+        .prompt-input {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid #00ff8844;
+            border-radius: 8px;
+            padding: 12px;
+            color: #fff;
+            font-family: inherit;
+            font-size: 0.8rem;
+            resize: none;
+            height: 100px;
+            outline: none;
+        }
+        .prompt-input:focus {
+            border-color: #00ff88;
+            box-shadow: 0 0 20px #00ff8833;
+        }
+        .prompt-input::placeholder { color: #00ff8844; }
+
+        .generate-btn {
+            margin-top: 10px;
+            background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);
+            border: none;
+            padding: 12px;
+            font-family: inherit;
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: #000;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px #00ff8855;
+        }
+
+        /* Game Type Selector */
+        .game-type-selector {
+            padding: 15px;
+            border-bottom: 1px solid #00ff8833;
+        }
+        .game-type-selector label {
+            font-size: 0.75rem;
+            opacity: 0.7;
+            margin-bottom: 8px;
+            display: block;
+        }
+        .game-types {
+            display: flex;
+            gap: 5px;
+        }
+        .game-type-btn {
+            flex: 1;
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid #00ff8844;
+            padding: 8px 4px;
+            font-family: inherit;
+            font-size: 0.65rem;
+            color: #00ff88;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .game-type-btn:hover, .game-type-btn.active {
+            background: #00ff88;
+            color: #000;
+        }
+
+        /* Center - Canvas */
+        .center-panel {
+            display: flex;
+            flex-direction: column;
+            background: #050508;
+        }
+        .toolbar {
+            display: flex;
+            gap: 5px;
+            padding: 10px 15px;
+            background: rgba(0, 20, 10, 0.8);
+            border-bottom: 1px solid #00ff8833;
+            flex-wrap: wrap;
+        }
+        .tool-btn {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid #00ff8844;
+            padding: 8px 12px;
+            font-family: inherit;
+            font-size: 0.75rem;
+            color: #00ff88;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .tool-btn:hover { background: rgba(0, 255, 136, 0.2); }
+        .tool-btn.active { background: #00ff88; color: #000; }
+        .tool-btn.danger { border-color: #ff008044; color: #ff0080; }
+        .tool-btn.danger:hover { background: #ff0080; color: #000; }
+        .tool-btn.play { border-color: #00aaff44; color: #00aaff; }
+        .tool-btn.play:hover { background: #00aaff; color: #000; }
+
+        .canvas-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow: auto;
+        }
+        #gameCanvas {
+            background: #111;
+            border: 2px solid #00ff8833;
+            border-radius: 8px;
+            cursor: crosshair;
+            image-rendering: pixelated;
+        }
+
+        /* Right Panel - Tiles */
+        .right-panel {
+            background: rgba(0, 20, 10, 0.8);
+            border-left: 1px solid #00ff8833;
+            display: flex;
+            flex-direction: column;
+        }
+        .tiles-grid {
+            padding: 15px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            overflow-y: auto;
+        }
+        .tile-btn {
+            aspect-ratio: 1;
+            background: rgba(0, 255, 136, 0.1);
+            border: 2px solid #00ff8844;
+            border-radius: 8px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .tile-btn:hover { transform: scale(1.1); border-color: #00ff88; }
+        .tile-btn.selected {
+            border-color: #00ff88;
+            background: #00ff8833;
+            box-shadow: 0 0 15px #00ff8855;
+        }
+
+        .tile-category {
+            padding: 10px 15px;
+            font-size: 0.7rem;
+            color: #00ff88;
+            opacity: 0.7;
+            border-bottom: 1px solid #00ff8822;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Play Mode Overlay */
+        .play-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 1000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .play-overlay.active { display: flex; }
+        .play-header {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        .play-stats {
+            font-size: 1rem;
+            color: #00ff88;
+        }
+        .exit-play-btn {
+            background: #ff0080;
+            border: none;
+            padding: 10px 20px;
+            font-family: inherit;
+            font-weight: 700;
+            color: #fff;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #playCanvas {
+            border: 3px solid #00ff88;
+            border-radius: 8px;
+        }
+        .play-controls {
+            margin-top: 20px;
+            font-size: 0.8rem;
+            color: #00ff8888;
+            text-align: center;
+        }
+
+        /* Help Modal */
+        .help-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .help-modal.active { display: flex; }
+        .help-content {
+            background: #0a0a0f;
+            border: 2px solid #00ff88;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .help-content h2 {
+            color: #00ff88;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+        .help-content h3 {
+            color: #00aaff;
+            margin: 20px 0 10px;
+            font-size: 1rem;
+        }
+        .help-content p, .help-content li {
+            color: #ccc;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+        .help-content code {
+            background: #00ff8822;
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: #00ff88;
+        }
+        .close-help {
+            margin-top: 20px;
+            background: #00ff88;
+            border: none;
+            padding: 10px 30px;
+            font-family: inherit;
+            font-weight: 700;
+            color: #000;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .main-container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr auto;
+            }
+            .left-panel, .right-panel {
+                border: none;
+                border-bottom: 1px solid #00ff8833;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="matrix-bg"></div>
+
+    <nav class="navbar">
+        <a href="../../../index.html" class="back-home">← BACK://jax.fun</a>
+        <span class="game-name">GAME_MAKER.exe</span>
+    </nav>
+
+    <div class="main-container">
+        <!-- Left Panel - AI Generator -->
+        <div class="left-panel">
+            <div class="panel-header">AI_GENERATOR</div>
+
+            <div class="game-type-selector">
+                <label>SELECT GAME TYPE:</label>
+                <div class="game-types">
+                    <button class="game-type-btn active" data-type="platformer">PLATFORM</button>
+                    <button class="game-type-btn" data-type="topdown">TOP-DOWN</button>
+                    <button class="game-type-btn" data-type="puzzle">PUZZLE</button>
+                </div>
+            </div>
+
+            <div class="terminal-area">
+                <div class="terminal-output" id="terminal">
+                    <div class="terminal-line info">[SYSTEM] Game Maker v1.0 initialized</div>
+                    <div class="terminal-line info">[SYSTEM] Type a description to generate a level</div>
+                    <div class="terminal-line">&nbsp;</div>
+                </div>
+                <textarea class="prompt-input" id="promptInput" placeholder="Describe your level...&#10;&#10;Examples:&#10;• a maze with lots of coins&#10;• hard platformer with spikes&#10;• puzzle with push blocks"></textarea>
+                <button class="generate-btn" onclick="generateLevel()">⚡ GENERATE LEVEL</button>
+            </div>
+        </div>
+
+        <!-- Center - Canvas -->
+        <div class="center-panel">
+            <div class="toolbar">
+                <button class="tool-btn" onclick="showHelp()">❓ Help</button>
+                <button class="tool-btn active" id="paintTool" onclick="setTool('paint')">🖌️ Paint</button>
+                <button class="tool-btn" id="eraseTool" onclick="setTool('erase')">🧹 Erase</button>
+                <button class="tool-btn" id="fillTool" onclick="setTool('fill')">🪣 Fill</button>
+                <div style="flex:1"></div>
+                <button class="tool-btn danger" onclick="clearLevel()">🗑️ Clear</button>
+                <button class="tool-btn play" onclick="playGame()">▶️ Play</button>
+            </div>
+            <div class="canvas-container">
+                <canvas id="gameCanvas" width="640" height="480"></canvas>
+            </div>
+        </div>
+
+        <!-- Right Panel - Tiles -->
+        <div class="right-panel">
+            <div class="panel-header">TILE_PALETTE</div>
+
+            <div class="tile-category">TERRAIN</div>
+            <div class="tiles-grid" id="terrainTiles"></div>
+
+            <div class="tile-category">OBJECTS</div>
+            <div class="tiles-grid" id="objectTiles"></div>
+
+            <div class="tile-category">ENTITIES</div>
+            <div class="tiles-grid" id="entityTiles"></div>
+        </div>
+    </div>
+
+    <!-- Play Overlay -->
+    <div class="play-overlay" id="playOverlay">
+        <div class="play-header">
+            <div class="play-stats">
+                <span>🪙 <span id="coinCount">0</span></span>
+                &nbsp;&nbsp;
+                <span>❤️ <span id="lifeCount">3</span></span>
+            </div>
+            <button class="exit-play-btn" onclick="exitPlay()">✕ EXIT</button>
+        </div>
+        <canvas id="playCanvas" width="640" height="480"></canvas>
+        <div class="play-controls">
+            <strong>CONTROLS:</strong> Arrow Keys or WASD to move | SPACE to jump (platformer) | R to restart
+        </div>
+    </div>
+
+    <!-- Help Modal -->
+    <div class="help-modal" id="helpModal">
+        <div class="help-content">
+            <h2>🎮 GAME MAKER HELP</h2>
+
+            <h3>AI Generation Keywords</h3>
+            <p>The AI understands these words in your descriptions:</p>
+            <ul>
+                <li><code>easy</code> / <code>hard</code> / <code>insane</code> - Difficulty level</li>
+                <li><code>maze</code> - Creates maze-like walls</li>
+                <li><code>coins</code> / <code>treasure</code> - Adds collectibles</li>
+                <li><code>enemies</code> / <code>monsters</code> - Adds enemies</li>
+                <li><code>spikes</code> / <code>lava</code> - Adds hazards</li>
+                <li><code>platforms</code> / <code>floating</code> - Adds platforms</li>
+                <li><code>keys</code> / <code>doors</code> - Adds locked doors</li>
+                <li><code>checkpoints</code> - Adds save points</li>
+            </ul>
+
+            <h3>Game Types</h3>
+            <ul>
+                <li><strong>Platformer:</strong> Side-view with gravity. Jump and run!</li>
+                <li><strong>Top-Down:</strong> Move in all directions. Adventure style!</li>
+                <li><strong>Puzzle:</strong> Push blocks, activate switches, solve challenges!</li>
+            </ul>
+
+            <h3>Editor Tools</h3>
+            <ul>
+                <li><strong>Paint:</strong> Place tiles on the grid</li>
+                <li><strong>Erase:</strong> Remove tiles</li>
+                <li><strong>Fill:</strong> Fill an area with the selected tile</li>
+            </ul>
+
+            <h3>Play Controls</h3>
+            <ul>
+                <li><strong>Arrow Keys / WASD:</strong> Move</li>
+                <li><strong>Space:</strong> Jump (platformer mode)</li>
+                <li><strong>R:</strong> Restart level</li>
+            </ul>
+
+            <button class="close-help" onclick="closeHelp()">GOT IT!</button>
+        </div>
+    </div>
+
+    <script>
+        // ============ CONFIGURATION ============
+        const GRID_WIDTH = 20;
+        const GRID_HEIGHT = 15;
+        const TILE_SIZE = 32;
+
+        // Tile definitions
+        const TILES = {
+            // Terrain
+            empty: { emoji: '', color: '#111', solid: false, category: 'terrain' },
+            ground: { emoji: '🟫', color: '#8B4513', solid: true, category: 'terrain' },
+            wall: { emoji: '🧱', color: '#666', solid: true, category: 'terrain' },
+            grass: { emoji: '🌿', color: '#228B22', solid: true, category: 'terrain' },
+            ice: { emoji: '🧊', color: '#87CEEB', solid: true, slippery: true, category: 'terrain' },
+            water: { emoji: '🌊', color: '#1E90FF', solid: false, deadly: true, category: 'terrain' },
+            lava: { emoji: '🔥', color: '#FF4500', solid: false, deadly: true, category: 'terrain' },
+
+            // Objects
+            coin: { emoji: '🪙', color: 'transparent', solid: false, collectible: true, category: 'object' },
+            gem: { emoji: '💎', color: 'transparent', solid: false, collectible: true, value: 5, category: 'object' },
+            key: { emoji: '🔑', color: 'transparent', solid: false, collectible: true, isKey: true, category: 'object' },
+            door: { emoji: '🚪', color: '#8B4513', solid: true, isDoor: true, category: 'object' },
+            spike: { emoji: '⚔️', color: 'transparent', solid: false, deadly: true, category: 'object' },
+            spring: { emoji: '🔵', color: 'transparent', solid: false, bouncy: true, category: 'object' },
+            checkpoint: { emoji: '🚩', color: 'transparent', solid: false, checkpoint: true, category: 'object' },
+
+            // Entities
+            player: { emoji: '😎', color: 'transparent', solid: false, isPlayer: true, category: 'entity' },
+            goal: { emoji: '⭐', color: 'transparent', solid: false, isGoal: true, category: 'entity' },
+            enemy: { emoji: '👾', color: 'transparent', solid: false, isEnemy: true, category: 'entity' },
+            enemyPatrol: { emoji: '🤖', color: 'transparent', solid: false, isEnemy: true, patrol: true, category: 'entity' },
+            pushBlock: { emoji: '📦', color: '#CD853F', solid: true, pushable: true, category: 'entity' },
+            switch: { emoji: '🔘', color: 'transparent', solid: false, isSwitch: true, category: 'entity' },
+        };
+
+        // ============ STATE ============
+        let currentTile = 'ground';
+        let currentTool = 'paint';
+        let gameType = 'platformer';
+        let grid = [];
+        let isDrawing = false;
+
+        // Play mode state
+        let player = { x: 0, y: 0, vx: 0, vy: 0, grounded: false };
+        let coins = 0;
+        let lives = 3;
+        let hasKey = false;
+        let enemies = [];
+        let pushBlocks = [];
+        let gameLoop = null;
+        let keys = {};
+        let checkpointPos = null;
+
+        // ============ INITIALIZATION ============
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const playCanvas = document.getElementById('playCanvas');
+        const playCtx = playCanvas.getContext('2d');
+
+        canvas.width = GRID_WIDTH * TILE_SIZE;
+        canvas.height = GRID_HEIGHT * TILE_SIZE;
+        playCanvas.width = canvas.width;
+        playCanvas.height = canvas.height;
+
+        // Initialize empty grid
+        function initGrid() {
+            grid = [];
+            for (let y = 0; y < GRID_HEIGHT; y++) {
+                grid[y] = [];
+                for (let x = 0; x < GRID_WIDTH; x++) {
+                    grid[y][x] = 'empty';
+                }
+            }
+        }
+
+        // Create tile palette
+        function createPalette() {
+            const terrainTiles = document.getElementById('terrainTiles');
+            const objectTiles = document.getElementById('objectTiles');
+            const entityTiles = document.getElementById('entityTiles');
+
+            for (const [name, tile] of Object.entries(TILES)) {
+                if (name === 'empty') continue;
+
+                const btn = document.createElement('button');
+                btn.className = 'tile-btn';
+                btn.innerHTML = tile.emoji;
+                btn.title = name;
+                btn.onclick = () => selectTile(name);
+                btn.dataset.tile = name;
+
+                if (tile.category === 'terrain') terrainTiles.appendChild(btn);
+                else if (tile.category === 'object') objectTiles.appendChild(btn);
+                else entityTiles.appendChild(btn);
+            }
+
+            // Select first tile
+            selectTile('ground');
+        }
+
+        function selectTile(name) {
+            currentTile = name;
+            document.querySelectorAll('.tile-btn').forEach(b => b.classList.remove('selected'));
+            document.querySelector(`[data-tile="${name}"]`)?.classList.add('selected');
+            setTool('paint');
+        }
+
+        // ============ DRAWING ============
+        function drawGrid() {
+            ctx.fillStyle = '#111';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw grid lines
+            ctx.strokeStyle = '#222';
+            ctx.lineWidth = 1;
+            for (let x = 0; x <= GRID_WIDTH; x++) {
+                ctx.beginPath();
+                ctx.moveTo(x * TILE_SIZE, 0);
+                ctx.lineTo(x * TILE_SIZE, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y <= GRID_HEIGHT; y++) {
+                ctx.beginPath();
+                ctx.moveTo(0, y * TILE_SIZE);
+                ctx.lineTo(canvas.width, y * TILE_SIZE);
+                ctx.stroke();
+            }
+
+            // Draw tiles
+            for (let y = 0; y < GRID_HEIGHT; y++) {
+                for (let x = 0; x < GRID_WIDTH; x++) {
+                    const tileType = grid[y][x];
+                    if (tileType !== 'empty') {
+                        const tile = TILES[tileType];
+
+                        // Draw background color
+                        if (tile.color && tile.color !== 'transparent') {
+                            ctx.fillStyle = tile.color;
+                            ctx.fillRect(x * TILE_SIZE + 1, y * TILE_SIZE + 1, TILE_SIZE - 2, TILE_SIZE - 2);
+                        }
+
+                        // Draw emoji
+                        if (tile.emoji) {
+                            ctx.font = `${TILE_SIZE - 8}px Arial`;
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillText(tile.emoji, x * TILE_SIZE + TILE_SIZE/2, y * TILE_SIZE + TILE_SIZE/2 + 2);
+                        }
+                    }
+                }
+            }
+        }
+
+        // ============ EDITOR TOOLS ============
+        function setTool(tool) {
+            currentTool = tool;
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tool + 'Tool')?.classList.add('active');
+        }
+
+        function getTileAt(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = Math.floor((e.clientX - rect.left) / TILE_SIZE);
+            const y = Math.floor((e.clientY - rect.top) / TILE_SIZE);
+            return { x, y };
+        }
+
+        function placeTile(x, y) {
+            if (x < 0 || x >= GRID_WIDTH || y < 0 || y >= GRID_HEIGHT) return;
+
+            if (currentTool === 'paint') {
+                // Only one player allowed
+                if (currentTile === 'player') {
+                    for (let py = 0; py < GRID_HEIGHT; py++) {
+                        for (let px = 0; px < GRID_WIDTH; px++) {
+                            if (grid[py][px] === 'player') grid[py][px] = 'empty';
+                        }
+                    }
+                }
+                grid[y][x] = currentTile;
+            } else if (currentTool === 'erase') {
+                grid[y][x] = 'empty';
+            } else if (currentTool === 'fill') {
+                floodFill(x, y, grid[y][x], currentTile);
+            }
+            drawGrid();
+        }
+
+        function floodFill(x, y, targetTile, replaceTile) {
+            if (x < 0 || x >= GRID_WIDTH || y < 0 || y >= GRID_HEIGHT) return;
+            if (grid[y][x] !== targetTile || targetTile === replaceTile) return;
+
+            grid[y][x] = replaceTile;
+            floodFill(x + 1, y, targetTile, replaceTile);
+            floodFill(x - 1, y, targetTile, replaceTile);
+            floodFill(x, y + 1, targetTile, replaceTile);
+            floodFill(x, y - 1, targetTile, replaceTile);
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            isDrawing = true;
+            const { x, y } = getTileAt(e);
+            placeTile(x, y);
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDrawing) return;
+            const { x, y } = getTileAt(e);
+            if (currentTool !== 'fill') placeTile(x, y);
+        });
+
+        canvas.addEventListener('mouseup', () => isDrawing = false);
+        canvas.addEventListener('mouseleave', () => isDrawing = false);
+
+        function clearLevel() {
+            if (confirm('Clear the entire level?')) {
+                initGrid();
+                drawGrid();
+                log('Level cleared', 'info');
+            }
+        }
+
+        // ============ AI LEVEL GENERATION ============
+        function log(message, type = '') {
+            const terminal = document.getElementById('terminal');
+            const line = document.createElement('div');
+            line.className = `terminal-line ${type}`;
+            line.textContent = `> ${message}`;
+            terminal.appendChild(line);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        function generateLevel() {
+            const prompt = document.getElementById('promptInput').value.toLowerCase();
+            if (!prompt.trim()) {
+                log('ERROR: Please enter a description', 'error');
+                return;
+            }
+
+            log(`Generating: "${prompt}"...`, 'info');
+            initGrid();
+
+            // Parse keywords
+            const isEasy = prompt.includes('easy');
+            const isHard = prompt.includes('hard') || prompt.includes('difficult');
+            const isInsane = prompt.includes('insane') || prompt.includes('impossible');
+            const hasMaze = prompt.includes('maze');
+            const hasCoins = prompt.includes('coin') || prompt.includes('treasure') || prompt.includes('collect');
+            const hasEnemies = prompt.includes('enem') || prompt.includes('monster');
+            const hasSpikes = prompt.includes('spike') || prompt.includes('trap');
+            const hasLava = prompt.includes('lava') || prompt.includes('fire');
+            const hasPlatforms = prompt.includes('platform') || prompt.includes('floating') || prompt.includes('jump');
+            const hasKeys = prompt.includes('key') || prompt.includes('door') || prompt.includes('lock');
+            const hasPushBlocks = prompt.includes('push') || prompt.includes('block') || prompt.includes('puzzle');
+            const hasCheckpoints = prompt.includes('checkpoint') || prompt.includes('save');
+
+            // Difficulty multiplier
+            let difficulty = 0.3;
+            if (isHard) difficulty = 0.5;
+            if (isInsane) difficulty = 0.7;
+            if (isEasy) difficulty = 0.15;
+
+            // Generate based on game type
+            if (gameType === 'platformer') {
+                generatePlatformer(difficulty, { hasMaze, hasCoins, hasEnemies, hasSpikes, hasLava, hasPlatforms, hasKeys, hasCheckpoints });
+            } else if (gameType === 'topdown') {
+                generateTopDown(difficulty, { hasMaze, hasCoins, hasEnemies, hasSpikes, hasKeys, hasCheckpoints });
+            } else {
+                generatePuzzle(difficulty, { hasMaze, hasCoins, hasPushBlocks, hasKeys });
+            }
+
+            drawGrid();
+            log('Level generated!', 'success');
+        }
+
+        function generatePlatformer(difficulty, options) {
+            // Ground floor
+            for (let x = 0; x < GRID_WIDTH; x++) {
+                grid[GRID_HEIGHT - 1][x] = 'ground';
+            }
+
+            // Add platforms
+            const platformCount = options.hasPlatforms ? 6 + Math.floor(Math.random() * 5) : 3;
+            for (let i = 0; i < platformCount; i++) {
+                const py = 3 + Math.floor(Math.random() * (GRID_HEIGHT - 5));
+                const px = Math.floor(Math.random() * (GRID_WIDTH - 5));
+                const len = 2 + Math.floor(Math.random() * 4);
+                for (let j = 0; j < len; j++) {
+                    if (px + j < GRID_WIDTH) grid[py][px + j] = 'ground';
+                }
+            }
+
+            // Maze walls
+            if (options.hasMaze) {
+                for (let i = 0; i < 15; i++) {
+                    const wx = Math.floor(Math.random() * GRID_WIDTH);
+                    const wy = Math.floor(Math.random() * (GRID_HEIGHT - 2));
+                    const vertical = Math.random() > 0.5;
+                    const len = 2 + Math.floor(Math.random() * 4);
+                    for (let j = 0; j < len; j++) {
+                        if (vertical && wy + j < GRID_HEIGHT - 1) grid[wy + j][wx] = 'wall';
+                        else if (!vertical && wx + j < GRID_WIDTH) grid[wy][wx + j] = 'wall';
+                    }
+                }
+            }
+
+            // Spikes/hazards
+            if (options.hasSpikes) {
+                const spikeCount = Math.floor(difficulty * 15);
+                for (let i = 0; i < spikeCount; i++) {
+                    const sx = Math.floor(Math.random() * GRID_WIDTH);
+                    if (grid[GRID_HEIGHT - 2][sx] === 'empty') {
+                        grid[GRID_HEIGHT - 2][sx] = 'spike';
+                    }
+                }
+            }
+
+            // Lava pits
+            if (options.hasLava) {
+                const pits = 1 + Math.floor(difficulty * 3);
+                for (let i = 0; i < pits; i++) {
+                    const lx = 3 + Math.floor(Math.random() * (GRID_WIDTH - 6));
+                    const len = 2 + Math.floor(Math.random() * 3);
+                    for (let j = 0; j < len; j++) {
+                        if (lx + j < GRID_WIDTH) grid[GRID_HEIGHT - 1][lx + j] = 'lava';
+                    }
+                }
+            }
+
+            // Coins
+            if (options.hasCoins) {
+                const coinCount = 5 + Math.floor(Math.random() * 10);
+                for (let i = 0; i < coinCount; i++) {
+                    const cx = Math.floor(Math.random() * GRID_WIDTH);
+                    const cy = Math.floor(Math.random() * (GRID_HEIGHT - 2));
+                    if (grid[cy][cx] === 'empty') grid[cy][cx] = 'coin';
+                }
+            }
+
+            // Enemies
+            if (options.hasEnemies) {
+                const enemyCount = Math.floor(difficulty * 5) + 1;
+                for (let i = 0; i < enemyCount; i++) {
+                    const ex = 3 + Math.floor(Math.random() * (GRID_WIDTH - 6));
+                    const ey = GRID_HEIGHT - 2;
+                    if (grid[ey][ex] === 'empty') grid[ey][ex] = Math.random() > 0.5 ? 'enemy' : 'enemyPatrol';
+                }
+            }
+
+            // Keys and doors
+            if (options.hasKeys) {
+                const kx = Math.floor(Math.random() * (GRID_WIDTH - 2));
+                const ky = Math.floor(Math.random() * (GRID_HEIGHT - 3));
+                grid[ky][kx] = 'key';
+                grid[GRID_HEIGHT - 2][GRID_WIDTH - 2] = 'door';
+            }
+
+            // Checkpoints
+            if (options.hasCheckpoints) {
+                const midX = Math.floor(GRID_WIDTH / 2);
+                for (let y = GRID_HEIGHT - 2; y >= 0; y--) {
+                    if (grid[y][midX] === 'empty') {
+                        grid[y][midX] = 'checkpoint';
+                        break;
+                    }
+                }
+            }
+
+            // Player and goal
+            grid[GRID_HEIGHT - 2][1] = 'player';
+            grid[GRID_HEIGHT - 2][GRID_WIDTH - 2] = options.hasKeys ? 'door' : 'goal';
+        }
+
+        function generateTopDown(difficulty, options) {
+            // Border walls
+            for (let x = 0; x < GRID_WIDTH; x++) {
+                grid[0][x] = 'wall';
+                grid[GRID_HEIGHT - 1][x] = 'wall';
+            }
+            for (let y = 0; y < GRID_HEIGHT; y++) {
+                grid[y][0] = 'wall';
+                grid[y][GRID_WIDTH - 1] = 'wall';
+            }
+
+            // Maze generation
+            if (options.hasMaze) {
+                for (let i = 0; i < 20 + difficulty * 20; i++) {
+                    const wx = 2 + Math.floor(Math.random() * (GRID_WIDTH - 4));
+                    const wy = 2 + Math.floor(Math.random() * (GRID_HEIGHT - 4));
+                    const vertical = Math.random() > 0.5;
+                    const len = 2 + Math.floor(Math.random() * 5);
+                    for (let j = 0; j < len; j++) {
+                        if (vertical && wy + j < GRID_HEIGHT - 1) grid[wy + j][wx] = 'wall';
+                        else if (!vertical && wx + j < GRID_WIDTH - 1) grid[wy][wx + j] = 'wall';
+                    }
+                }
+            } else {
+                // Random walls
+                const wallCount = Math.floor(difficulty * 30);
+                for (let i = 0; i < wallCount; i++) {
+                    const wx = 2 + Math.floor(Math.random() * (GRID_WIDTH - 4));
+                    const wy = 2 + Math.floor(Math.random() * (GRID_HEIGHT - 4));
+                    grid[wy][wx] = 'wall';
+                }
+            }
+
+            // Coins
+            if (options.hasCoins) {
+                const coinCount = 10 + Math.floor(Math.random() * 15);
+                for (let i = 0; i < coinCount; i++) {
+                    const cx = 1 + Math.floor(Math.random() * (GRID_WIDTH - 2));
+                    const cy = 1 + Math.floor(Math.random() * (GRID_HEIGHT - 2));
+                    if (grid[cy][cx] === 'empty') grid[cy][cx] = 'coin';
+                }
+            }
+
+            // Enemies
+            if (options.hasEnemies) {
+                const enemyCount = Math.floor(difficulty * 6) + 2;
+                for (let i = 0; i < enemyCount; i++) {
+                    const ex = 3 + Math.floor(Math.random() * (GRID_WIDTH - 6));
+                    const ey = 3 + Math.floor(Math.random() * (GRID_HEIGHT - 6));
+                    if (grid[ey][ex] === 'empty') grid[ey][ex] = 'enemyPatrol';
+                }
+            }
+
+            // Spikes
+            if (options.hasSpikes) {
+                const spikeCount = Math.floor(difficulty * 10);
+                for (let i = 0; i < spikeCount; i++) {
+                    const sx = 2 + Math.floor(Math.random() * (GRID_WIDTH - 4));
+                    const sy = 2 + Math.floor(Math.random() * (GRID_HEIGHT - 4));
+                    if (grid[sy][sx] === 'empty') grid[sy][sx] = 'spike';
+                }
+            }
+
+            // Keys and doors
+            if (options.hasKeys) {
+                grid[GRID_HEIGHT - 3][GRID_WIDTH - 3] = 'key';
+                grid[1][GRID_WIDTH - 2] = 'door';
+            }
+
+            // Player and goal
+            grid[1][1] = 'player';
+            grid[GRID_HEIGHT - 2][GRID_WIDTH - 2] = options.hasKeys ? 'door' : 'goal';
+        }
+
+        function generatePuzzle(difficulty, options) {
+            // Border walls
+            for (let x = 0; x < GRID_WIDTH; x++) {
+                grid[0][x] = 'wall';
+                grid[GRID_HEIGHT - 1][x] = 'wall';
+            }
+            for (let y = 0; y < GRID_HEIGHT; y++) {
+                grid[y][0] = 'wall';
+                grid[y][GRID_WIDTH - 1] = 'wall';
+            }
+
+            // Interior walls for puzzle rooms
+            if (options.hasMaze) {
+                // Create rooms
+                const midX = Math.floor(GRID_WIDTH / 2);
+                const midY = Math.floor(GRID_HEIGHT / 2);
+                for (let y = 1; y < GRID_HEIGHT - 1; y++) {
+                    if (y !== midY) grid[y][midX] = 'wall';
+                }
+                for (let x = 1; x < GRID_WIDTH - 1; x++) {
+                    if (x !== midX - 3 && x !== midX + 3) grid[midY][x] = 'wall';
+                }
+            }
+
+            // Push blocks
+            if (options.hasPushBlocks) {
+                const blockCount = 3 + Math.floor(difficulty * 5);
+                for (let i = 0; i < blockCount; i++) {
+                    const bx = 2 + Math.floor(Math.random() * (GRID_WIDTH - 4));
+                    const by = 2 + Math.floor(Math.random() * (GRID_HEIGHT - 4));
+                    if (grid[by][bx] === 'empty') grid[by][bx] = 'pushBlock';
+                }
+
+                // Add switches
+                for (let i = 0; i < 2; i++) {
+                    const sx = 2 + Math.floor(Math.random() * (GRID_WIDTH - 4));
+                    const sy = 2 + Math.floor(Math.random() * (GRID_HEIGHT - 4));
+                    if (grid[sy][sx] === 'empty') grid[sy][sx] = 'switch';
+                }
+            }
+
+            // Coins
+            if (options.hasCoins) {
+                const coinCount = 5 + Math.floor(Math.random() * 5);
+                for (let i = 0; i < coinCount; i++) {
+                    const cx = 2 + Math.floor(Math.random() * (GRID_WIDTH - 4));
+                    const cy = 2 + Math.floor(Math.random() * (GRID_HEIGHT - 4));
+                    if (grid[cy][cx] === 'empty') grid[cy][cx] = 'coin';
+                }
+            }
+
+            // Keys and doors
+            if (options.hasKeys) {
+                grid[GRID_HEIGHT - 3][GRID_WIDTH - 3] = 'key';
+                grid[1][GRID_WIDTH - 2] = 'door';
+            }
+
+            // Player and goal
+            grid[GRID_HEIGHT - 2][1] = 'player';
+            grid[1][GRID_WIDTH - 2] = options.hasKeys ? 'door' : 'goal';
+        }
+
+        // Game type buttons
+        document.querySelectorAll('.game-type-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.game-type-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                gameType = btn.dataset.type;
+                log(`Game type: ${gameType.toUpperCase()}`, 'info');
+            });
+        });
+
+        // ============ PLAY MODE ============
+        function playGame() {
+            // Find player start
+            let playerStart = null;
+            enemies = [];
+            pushBlocks = [];
+
+            for (let y = 0; y < GRID_HEIGHT; y++) {
+                for (let x = 0; x < GRID_WIDTH; x++) {
+                    const tile = grid[y][x];
+                    if (tile === 'player') {
+                        playerStart = { x: x * TILE_SIZE, y: y * TILE_SIZE };
+                    } else if (TILES[tile]?.isEnemy) {
+                        enemies.push({
+                            x: x * TILE_SIZE,
+                            y: y * TILE_SIZE,
+                            vx: TILES[tile].patrol ? 1 : 0,
+                            type: tile
+                        });
+                    } else if (tile === 'pushBlock') {
+                        pushBlocks.push({ x: x * TILE_SIZE, y: y * TILE_SIZE });
+                    }
+                }
+            }
+
+            if (!playerStart) {
+                log('ERROR: No player start position! Add a 😎 player tile.', 'error');
+                return;
+            }
+
+            player = { ...playerStart, vx: 0, vy: 0, grounded: false };
+            coins = 0;
+            lives = 3;
+            hasKey = false;
+            checkpointPos = { ...playerStart };
+
+            document.getElementById('coinCount').textContent = '0';
+            document.getElementById('lifeCount').textContent = '3';
+            document.getElementById('playOverlay').classList.add('active');
+
+            // Start game loop
+            if (gameLoop) cancelAnimationFrame(gameLoop);
+            lastTime = performance.now();
+            gameLoop = requestAnimationFrame(updateGame);
+        }
+
+        function exitPlay() {
+            document.getElementById('playOverlay').classList.remove('active');
+            if (gameLoop) cancelAnimationFrame(gameLoop);
+            gameLoop = null;
+        }
+
+        let lastTime = 0;
+        const GRAVITY = gameType === 'platformer' ? 0.5 : 0;
+        const SPEED = 4;
+        const JUMP = -10;
+
+        function updateGame(time) {
+            const dt = Math.min((time - lastTime) / 16.67, 2);
+            lastTime = time;
+
+            // Input
+            const moveX = (keys['ArrowRight'] || keys['KeyD'] ? 1 : 0) - (keys['ArrowLeft'] || keys['KeyA'] ? 1 : 0);
+            const moveY = gameType !== 'platformer' ?
+                ((keys['ArrowDown'] || keys['KeyS'] ? 1 : 0) - (keys['ArrowUp'] || keys['KeyW'] ? 1 : 0)) : 0;
+
+            player.vx = moveX * SPEED;
+
+            if (gameType === 'platformer') {
+                player.vy += 0.5 * dt; // Gravity
+                if ((keys['Space'] || keys['ArrowUp'] || keys['KeyW']) && player.grounded) {
+                    player.vy = JUMP;
+                    player.grounded = false;
+                }
+            } else {
+                player.vy = moveY * SPEED;
+            }
+
+            // Move player
+            player.x += player.vx * dt;
+            player.y += player.vy * dt;
+
+            // Collision detection
+            player.grounded = false;
+
+            const checkCollision = (px, py) => {
+                const gx = Math.floor(px / TILE_SIZE);
+                const gy = Math.floor(py / TILE_SIZE);
+                if (gx < 0 || gx >= GRID_WIDTH || gy < 0 || gy >= GRID_HEIGHT) return { solid: true };
+                const tileType = grid[gy][gx];
+                return { ...TILES[tileType], gx, gy, type: tileType };
+            };
+
+            // Check corners
+            const corners = [
+                checkCollision(player.x + 4, player.y + 4),
+                checkCollision(player.x + TILE_SIZE - 4, player.y + 4),
+                checkCollision(player.x + 4, player.y + TILE_SIZE - 4),
+                checkCollision(player.x + TILE_SIZE - 4, player.y + TILE_SIZE - 4),
+            ];
+
+            // Handle collisions
+            for (const c of corners) {
+                if (c.solid) {
+                    // Push back
+                    if (player.vx > 0) player.x = c.gx * TILE_SIZE - TILE_SIZE;
+                    if (player.vx < 0) player.x = (c.gx + 1) * TILE_SIZE;
+                    if (player.vy > 0) {
+                        player.y = c.gy * TILE_SIZE - TILE_SIZE;
+                        player.grounded = true;
+                        player.vy = 0;
+                    }
+                    if (player.vy < 0) {
+                        player.y = (c.gy + 1) * TILE_SIZE;
+                        player.vy = 0;
+                    }
+                }
+
+                if (c.deadly) {
+                    die();
+                    break;
+                }
+
+                if (c.collectible && grid[c.gy]?.[c.gx]) {
+                    grid[c.gy][c.gx] = 'empty';
+                    coins += c.value || 1;
+                    document.getElementById('coinCount').textContent = coins;
+                }
+
+                if (c.isKey) {
+                    grid[c.gy][c.gx] = 'empty';
+                    hasKey = true;
+                    log('Got the key!', 'success');
+                }
+
+                if (c.isDoor && hasKey) {
+                    grid[c.gy][c.gx] = 'goal';
+                    log('Door unlocked!', 'success');
+                }
+
+                if (c.isGoal) {
+                    win();
+                    return;
+                }
+
+                if (c.checkpoint) {
+                    checkpointPos = { x: player.x, y: player.y };
+                }
+
+                if (c.bouncy && player.vy > 0) {
+                    player.vy = JUMP * 1.5;
+                }
+            }
+
+            // Update enemies
+            for (const enemy of enemies) {
+                if (enemy.vx) {
+                    enemy.x += enemy.vx * dt;
+                    const gx = Math.floor((enemy.x + TILE_SIZE/2) / TILE_SIZE);
+                    const gy = Math.floor((enemy.y + TILE_SIZE/2) / TILE_SIZE);
+
+                    // Reverse at walls
+                    const nextGx = gx + Math.sign(enemy.vx);
+                    if (nextGx < 0 || nextGx >= GRID_WIDTH || TILES[grid[gy]?.[nextGx]]?.solid) {
+                        enemy.vx *= -1;
+                    }
+                }
+
+                // Check collision with player
+                if (Math.abs(player.x - enemy.x) < TILE_SIZE - 8 &&
+                    Math.abs(player.y - enemy.y) < TILE_SIZE - 8) {
+                    die();
+                }
+            }
+
+            // Bounds
+            player.x = Math.max(0, Math.min(canvas.width - TILE_SIZE, player.x));
+            player.y = Math.max(0, Math.min(canvas.height - TILE_SIZE, player.y));
+
+            // Draw
+            drawPlayScreen();
+
+            gameLoop = requestAnimationFrame(updateGame);
+        }
+
+        function die() {
+            lives--;
+            document.getElementById('lifeCount').textContent = lives;
+
+            if (lives <= 0) {
+                log('Game Over!', 'error');
+                alert('Game Over! Try again?');
+                exitPlay();
+            } else {
+                player.x = checkpointPos.x;
+                player.y = checkpointPos.y;
+                player.vx = 0;
+                player.vy = 0;
+            }
+        }
+
+        function win() {
+            log(`Level complete! Coins: ${coins}`, 'success');
+            alert(`🎉 You Win!\n\nCoins collected: ${coins}`);
+            exitPlay();
+        }
+
+        function drawPlayScreen() {
+            playCtx.fillStyle = '#111';
+            playCtx.fillRect(0, 0, playCanvas.width, playCanvas.height);
+
+            // Draw tiles (except player)
+            for (let y = 0; y < GRID_HEIGHT; y++) {
+                for (let x = 0; x < GRID_WIDTH; x++) {
+                    const tileType = grid[y][x];
+                    if (tileType !== 'empty' && tileType !== 'player') {
+                        const tile = TILES[tileType];
+
+                        if (tile.color && tile.color !== 'transparent') {
+                            playCtx.fillStyle = tile.color;
+                            playCtx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                        }
+
+                        if (tile.emoji) {
+                            playCtx.font = `${TILE_SIZE - 8}px Arial`;
+                            playCtx.textAlign = 'center';
+                            playCtx.textBaseline = 'middle';
+                            playCtx.fillText(tile.emoji, x * TILE_SIZE + TILE_SIZE/2, y * TILE_SIZE + TILE_SIZE/2 + 2);
+                        }
+                    }
+                }
+            }
+
+            // Draw enemies
+            for (const enemy of enemies) {
+                playCtx.font = `${TILE_SIZE - 8}px Arial`;
+                playCtx.textAlign = 'center';
+                playCtx.textBaseline = 'middle';
+                playCtx.fillText(TILES[enemy.type].emoji, enemy.x + TILE_SIZE/2, enemy.y + TILE_SIZE/2 + 2);
+            }
+
+            // Draw player
+            playCtx.font = `${TILE_SIZE - 4}px Arial`;
+            playCtx.fillText('😎', player.x + TILE_SIZE/2, player.y + TILE_SIZE/2 + 2);
+
+            // Key indicator
+            if (hasKey) {
+                playCtx.fillStyle = '#00ff88';
+                playCtx.font = '16px Arial';
+                playCtx.fillText('🔑', 20, 30);
+            }
+        }
+
+        // Keyboard input
+        document.addEventListener('keydown', (e) => {
+            keys[e.code] = true;
+            if (e.code === 'KeyR' && document.getElementById('playOverlay').classList.contains('active')) {
+                player.x = checkpointPos.x;
+                player.y = checkpointPos.y;
+                player.vx = 0;
+                player.vy = 0;
+            }
+            if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+                e.preventDefault();
+            }
+        });
+        document.addEventListener('keyup', (e) => keys[e.code] = false);
+
+        // ============ HELP ============
+        function showHelp() {
+            document.getElementById('helpModal').classList.add('active');
+        }
+        function closeHelp() {
+            document.getElementById('helpModal').classList.remove('active');
+        }
+
+        // ============ INIT ============
+        initGrid();
+        createPalette();
+        drawGrid();
+        log('Ready! Type a level description or start editing.', 'success');
+    </script>
+</body>
+</html>

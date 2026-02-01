@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kitten Rhythm - jax.fun</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #fecfef 100%);
+            min-height: 100vh;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        /* Navigation */
+        .navbar {
+            padding: 15px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 100;
+        }
+        .back-home {
+            color: rgba(255,255,255,0.9);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 700;
+            transition: all 0.2s;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .back-home:hover { color: #fff; }
+        .game-name {
+            font-size: 0.95rem;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        /* Cat Background */
+        .cat-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            filter: blur(3px) brightness(0.7);
+            z-index: -1;
+            transition: background-image 0.5s ease;
+        }
+
+        /* Menu Screen */
+        .menu-screen, .game-screen, .results-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+        .hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(0.95);
+        }
+
+        .menu-title {
+            font-size: 3.5rem;
+            font-weight: 900;
+            text-shadow: 4px 4px 0 rgba(0,0,0,0.3);
+            margin-bottom: 10px;
+        }
+        .menu-subtitle {
+            font-size: 1.3rem;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.2);
+        }
+
+        /* Level Select */
+        .level-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+            max-width: 700px;
+            padding: 20px;
+        }
+        .level-btn {
+            background: rgba(255,255,255,0.95);
+            border: none;
+            padding: 15px 10px;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .level-btn:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+        .level-btn.locked {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .level-btn.locked:hover {
+            transform: none;
+        }
+        .level-icon { font-size: 2rem; margin-bottom: 5px; }
+        .level-name { font-size: 0.8rem; font-weight: 700; color: #333; }
+        .level-diff { font-size: 0.65rem; color: #888; text-transform: uppercase; }
+
+        .difficulty-baby .level-icon { background: linear-gradient(135deg, #a8edea, #fed6e3); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .difficulty-easy { border-bottom: 4px solid #4ade80; }
+        .difficulty-medium { border-bottom: 4px solid #facc15; }
+        .difficulty-hard { border-bottom: 4px solid #f97316; }
+        .difficulty-expert { border-bottom: 4px solid #ef4444; }
+        .difficulty-hacker { border-bottom: 4px solid #8b5cf6; animation: hackerGlow 1s infinite alternate; }
+
+        @keyframes hackerGlow {
+            from { box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4); }
+            to { box-shadow: 0 4px 25px rgba(139, 92, 246, 0.8); }
+        }
+
+        /* Game Screen */
+        .game-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            height: 500px;
+            margin-top: 60px;
+        }
+
+        /* HUD */
+        .hud {
+            position: fixed;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 30px;
+            z-index: 50;
+        }
+        .hud-item {
+            background: rgba(0,0,0,0.5);
+            padding: 10px 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        .hud-label { font-size: 0.7rem; opacity: 0.8; }
+        .hud-value { font-size: 1.5rem; font-weight: 900; }
+
+        .health-bar {
+            width: 200px;
+            height: 20px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .health-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ef4444, #22c55e);
+            transition: width 0.2s;
+            border-radius: 10px;
+        }
+
+        /* Arrow Track */
+        .arrow-track {
+            position: absolute;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+        }
+        .arrow-lane {
+            width: 70px;
+            height: 350px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+        .target-zone {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 70px;
+            background: rgba(255,255,255,0.2);
+            border: 3px solid rgba(255,255,255,0.5);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            transition: all 0.1s;
+        }
+        .target-zone.hit {
+            background: rgba(34, 197, 94, 0.6);
+            transform: scale(1.1);
+        }
+        .target-zone.miss {
+            background: rgba(239, 68, 68, 0.6);
+        }
+
+        /* Arrows */
+        .arrow {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            left: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            animation: arrowGlow 0.5s infinite alternate;
+        }
+        @keyframes arrowGlow {
+            from { filter: brightness(1); }
+            to { filter: brightness(1.2); }
+        }
+        .arrow.left { background: linear-gradient(135deg, #ec4899, #f43f5e); }
+        .arrow.down { background: linear-gradient(135deg, #06b6d4, #0ea5e9); }
+        .arrow.up { background: linear-gradient(135deg, #22c55e, #10b981); }
+        .arrow.right { background: linear-gradient(135deg, #f59e0b, #eab308); }
+
+        /* Hit Feedback */
+        .hit-text {
+            position: fixed;
+            font-size: 2rem;
+            font-weight: 900;
+            text-shadow: 3px 3px 0 rgba(0,0,0,0.3);
+            animation: hitPop 0.5s forwards;
+            pointer-events: none;
+            z-index: 200;
+        }
+        @keyframes hitPop {
+            0% { transform: scale(0.5); opacity: 1; }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(1) translateY(-30px); opacity: 0; }
+        }
+        .hit-text.perfect { color: #fbbf24; }
+        .hit-text.good { color: #22c55e; }
+        .hit-text.ok { color: #3b82f6; }
+        .hit-text.miss { color: #ef4444; }
+        .hit-text.spam { color: #dc2626; font-size: 1.5rem; }
+
+        /* Combo */
+        .combo-display {
+            position: fixed;
+            top: 130px;
+            right: 30px;
+            text-align: right;
+            z-index: 50;
+        }
+        .combo-count {
+            font-size: 3rem;
+            font-weight: 900;
+            text-shadow: 3px 3px 0 rgba(0,0,0,0.3);
+        }
+        .combo-label {
+            font-size: 1rem;
+            opacity: 0.8;
+        }
+
+        /* Results Screen */
+        .results-box {
+            background: rgba(255,255,255,0.95);
+            color: #333;
+            padding: 40px 60px;
+            border-radius: 24px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .results-title {
+            font-size: 2rem;
+            font-weight: 900;
+            margin-bottom: 20px;
+        }
+        .results-grade {
+            font-size: 5rem;
+            font-weight: 900;
+            margin: 20px 0;
+        }
+        .grade-s { color: #fbbf24; text-shadow: 0 0 30px rgba(251, 191, 36, 0.5); }
+        .grade-a { color: #22c55e; }
+        .grade-b { color: #3b82f6; }
+        .grade-c { color: #f59e0b; }
+        .grade-f { color: #ef4444; }
+
+        .results-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-item {
+            background: #f3f4f6;
+            padding: 12px;
+            border-radius: 12px;
+        }
+        .stat-label { font-size: 0.75rem; color: #666; }
+        .stat-value { font-size: 1.3rem; font-weight: 700; }
+
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+        }
+        .btn {
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+            border: none;
+            padding: 14px 28px;
+            font-size: 1rem;
+            font-weight: 700;
+            color: #fff;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            box-shadow: 0 4px 15px rgba(255, 154, 158, 0.4);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+        }
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(255, 154, 158, 0.5);
+        }
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #333;
+            box-shadow: none;
+            text-shadow: none;
+        }
+
+        /* Instructions */
+        .instructions {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.5);
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+        .key-hint {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 4px 10px;
+            border-radius: 6px;
+            margin: 0 3px;
+            font-weight: 700;
+        }
+
+        /* Countdown */
+        .countdown {
+            font-size: 8rem;
+            font-weight: 900;
+            text-shadow: 4px 4px 0 rgba(0,0,0,0.3);
+            animation: countPulse 1s infinite;
+        }
+        @keyframes countPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        /* Cat mascot */
+        .cat-mascot {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            font-size: 4rem;
+            animation: catBounce 0.5s infinite alternate;
+            z-index: 50;
+        }
+        @keyframes catBounce {
+            from { transform: translateY(0); }
+            to { transform: translateY(-10px); }
+        }
+
+        /* Level info */
+        .level-info {
+            position: fixed;
+            top: 60px;
+            left: 20px;
+            background: rgba(0,0,0,0.5);
+            padding: 10px 20px;
+            border-radius: 12px;
+            z-index: 50;
+        }
+        .level-title { font-size: 1.2rem; font-weight: 700; }
+        .level-subtitle { font-size: 0.8rem; opacity: 0.8; }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .level-grid { grid-template-columns: repeat(2, 1fr); }
+            .menu-title { font-size: 2.5rem; }
+            .arrow-lane { width: 55px; height: 280px; }
+            .arrow { width: 45px; height: 45px; font-size: 1.8rem; }
+            .target-zone { height: 55px; font-size: 1.8rem; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="../../../index.html" class="back-home">← Back to jax.fun</a>
+        <span class="game-name">Kitten Rhythm</span>
+    </nav>
+
+    <div class="cat-background" id="catBg"></div>
+
+    <!-- Menu Screen -->
+    <div class="menu-screen" id="menuScreen">
+        <div class="menu-title">Kitten Rhythm</div>
+        <div class="menu-subtitle">Hit the arrows to the beat!</div>
+
+        <div class="level-grid" id="levelGrid">
+            <!-- Levels populated by JS -->
+        </div>
+
+        <div class="instructions">
+            Use <span class="key-hint">←</span> <span class="key-hint">↓</span> <span class="key-hint">↑</span> <span class="key-hint">→</span> or <span class="key-hint">A</span> <span class="key-hint">S</span> <span class="key-hint">W</span> <span class="key-hint">D</span>
+        </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div class="game-screen hidden" id="gameScreen">
+        <div class="hud">
+            <div class="hud-item">
+                <div class="hud-label">SCORE</div>
+                <div class="hud-value" id="scoreDisplay">0</div>
+            </div>
+            <div class="hud-item">
+                <div class="hud-label">HEALTH</div>
+                <div class="health-bar">
+                    <div class="health-fill" id="healthBar" style="width: 100%"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="level-info" id="levelInfo">
+            <div class="level-title" id="levelTitle">Level</div>
+            <div class="level-subtitle" id="levelSubtitle">Difficulty</div>
+        </div>
+
+        <div class="combo-display" id="comboDisplay" style="display: none;">
+            <div class="combo-count" id="comboCount">0</div>
+            <div class="combo-label">COMBO</div>
+        </div>
+
+        <div class="game-container">
+            <div class="arrow-track" id="arrowTrack">
+                <div class="arrow-lane" data-direction="left">
+                    <div class="target-zone">←</div>
+                </div>
+                <div class="arrow-lane" data-direction="down">
+                    <div class="target-zone">↓</div>
+                </div>
+                <div class="arrow-lane" data-direction="up">
+                    <div class="target-zone">↑</div>
+                </div>
+                <div class="arrow-lane" data-direction="right">
+                    <div class="target-zone">→</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="cat-mascot" id="catMascot">😺</div>
+    </div>
+
+    <!-- Results Screen -->
+    <div class="results-screen hidden" id="resultsScreen">
+        <div class="results-box">
+            <div class="results-title" id="resultsTitle">Level Complete!</div>
+            <div class="results-grade" id="resultsGrade">S</div>
+            <div class="results-stats">
+                <div class="stat-item">
+                    <div class="stat-label">SCORE</div>
+                    <div class="stat-value" id="finalScore">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">MAX COMBO</div>
+                    <div class="stat-value" id="maxCombo">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">PERFECT</div>
+                    <div class="stat-value" id="perfectCount">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">ACCURACY</div>
+                    <div class="stat-value" id="accuracy">0%</div>
+                </div>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-secondary" id="btnMenu">Menu</button>
+                <button class="btn" id="btnRetry">Retry</button>
+                <button class="btn" id="btnNext" style="display: none;">Next Level</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============== GAME CONFIG ==============
+        const LEVELS = [
+            {
+                id: 1, name: "Sleepy Kitten", difficulty: "Baby", tier: "baby",
+                bpm: 60, arrowSpeed: 3, spawnRate: 1500, duration: 30000,
+                catEmoji: "😴", patterns: ["single"],
+                bgUrl: "https://placecats.com/millie/800/600",
+                musicUrl: "https://cdn.freesound.org/previews/520/520710_2402876-hq.mp3"
+            },
+            {
+                id: 2, name: "Curious Kitty", difficulty: "Baby", tier: "baby",
+                bpm: 70, arrowSpeed: 3.5, spawnRate: 1300, duration: 35000,
+                catEmoji: "😺", patterns: ["single"],
+                bgUrl: "https://placecats.com/bella/800/600",
+                musicUrl: "https://cdn.freesound.org/previews/523/523725_2402876-hq.mp3"
+            },
+            {
+                id: 3, name: "Playful Paws", difficulty: "Easy", tier: "easy",
+                bpm: 80, arrowSpeed: 4, spawnRate: 1100, duration: 40000,
+                catEmoji: "😸", patterns: ["single", "double"],
+                bgUrl: "https://placecats.com/poppy/800/600",
+                musicUrl: "https://cdn.freesound.org/previews/520/520937_2402876-hq.mp3"
+            },
+            {
+                id: 4, name: "Yarn Chase", difficulty: "Easy", tier: "easy",
+                bpm: 90, arrowSpeed: 4.5, spawnRate: 950, duration: 40000,
+                catEmoji: "😹", patterns: ["single", "double"],
+                bgUrl: "https://placecats.com/neo/800/600",
+                musicUrl: "https://cdn.freesound.org/previews/512/512161_2402876-hq.mp3"
+            },
+            {
+                id: 5, name: "Catnip Craze", difficulty: "Medium", tier: "medium",
+                bpm: 100, arrowSpeed: 5, spawnRate: 800, duration: 45000,
+                catEmoji: "😼", patterns: ["single", "double", "triple"],
+                bgUrl: "https://placecats.com/millie_neo/800/600",
+                musicUrl: "https://cdn.freesound.org/previews/513/513667_2402876-hq.mp3"
+            },
+            {
+                id: 6, name: "Midnight Zoomies", difficulty: "Medium", tier: "medium",
+                bpm: 110, arrowSpeed: 5.5, spawnRate: 700, duration: 45000,
+                catEmoji: "🙀", patterns: ["single", "double", "triple"],
+                bgUrl: "https://placecats.com/800/600",
+                musicUrl: "https://cdn.freesound.org/previews/251/251260_3162775-hq.mp3"
+            },
+            {
+                id: 7, name: "Laser Pointer", difficulty: "Hard", tier: "hard",
+                bpm: 120, arrowSpeed: 6, spawnRate: 600, duration: 50000,
+                catEmoji: "😾", patterns: ["single", "double", "triple", "burst"],
+                bgUrl: "https://placecats.com/neo_bella/800/600",
+                musicUrl: "https://cdn.freesound.org/previews/745/745830_8645255-hq.mp3"
+            },
+            {
+                id: 8, name: "Cat Burglar", difficulty: "Hard", tier: "hard",
+                bpm: 130, arrowSpeed: 6.5, spawnRate: 500, duration: 50000,
+                catEmoji: "😿", patterns: ["double", "triple", "burst"],
+                bgUrl: "https://placecats.com/poppy_bella/800/600",
+                musicUrl: "https://cdn.freesound.org/previews/493/493765_3162775-hq.mp3"
+            },
+            {
+                id: 9, name: "Nine Lives", difficulty: "Expert", tier: "expert",
+                bpm: 145, arrowSpeed: 7, spawnRate: 400, duration: 55000,
+                catEmoji: "😈", patterns: ["double", "triple", "burst", "chaos"],
+                bgUrl: "https://placecats.com/g/800/600",
+                musicUrl: "https://cdn.freesound.org/previews/650/650281_14248671-hq.mp3"
+            },
+            {
+                id: 10, name: "MEOW MATRIX", difficulty: "Hacker", tier: "hacker",
+                bpm: 164, arrowSpeed: 8, spawnRate: 300, duration: 60000,
+                catEmoji: "👾", patterns: ["triple", "burst", "chaos", "insane"],
+                bgUrl: "https://placecats.com/neo_2/800/600",
+                musicUrl: "https://cdn.freesound.org/previews/669/669547_14625377-hq.mp3"
+            }
+        ];
+
+        const DIRECTIONS = ['left', 'down', 'up', 'right'];
+        const ARROWS = { left: '←', down: '↓', up: '↑', right: '→' };
+        const KEYS = {
+            'ArrowLeft': 'left', 'KeyA': 'left',
+            'ArrowDown': 'down', 'KeyS': 'down',
+            'ArrowUp': 'up', 'KeyW': 'up',
+            'ArrowRight': 'right', 'KeyD': 'right'
+        };
+
+        // ============== GAME STATE ==============
+        let currentLevel = null;
+        let score = 0;
+        let health = 100;
+        let combo = 0;
+        let maxCombo = 0;
+        let perfectCount = 0;
+        let goodCount = 0;
+        let okCount = 0;
+        let missCount = 0;
+        let spamCount = 0;
+        let totalNotes = 0;
+        let gameRunning = false;
+        let arrows = [];
+        let lastSpawnTime = 0;
+        let gameStartTime = 0;
+        let audioContext = null;
+        let music = null;
+        let gameEndTimeout = null;
+        let isCountingDown = false;
+        let unlockedLevels = JSON.parse(localStorage.getItem('kittenRhythmUnlocked') || '[1]');
+
+        // Sound effects - different meow for each arrow!
+        const meowSounds = {
+            left: new Audio('https://cdn.freesound.org/previews/448/448084_9159316-hq.mp3'),   // Cute kitten meow
+            down: new Audio('https://cdn.freesound.org/previews/436/436540_1196472-hq.mp3'),   // Short sharp meow
+            up: new Audio('https://cdn.freesound.org/previews/54/54058_251093-hq.mp3'),        // Pucky meow
+            right: new Audio('https://cdn.freesound.org/previews/668/668814_14585550-hq.mp3')  // Different tone meow
+        };
+        const missSound = new Audio('https://cdn.freesound.org/previews/722/722375_71257-hq.mp3');  // Simple short error beep
+        const failSound = new Audio('https://cdn.freesound.org/previews/253/253886_3169537-hq.mp3'); // Game over beeps
+
+        // Set volumes for all sounds
+        Object.values(meowSounds).forEach(sound => sound.volume = 0.5);
+        missSound.volume = 0.4;
+        failSound.volume = 0.5;
+
+        // ============== DOM ELEMENTS ==============
+        const menuScreen = document.getElementById('menuScreen');
+        const gameScreen = document.getElementById('gameScreen');
+        const resultsScreen = document.getElementById('resultsScreen');
+        const levelGrid = document.getElementById('levelGrid');
+        const arrowTrack = document.getElementById('arrowTrack');
+        const catBg = document.getElementById('catBg');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const healthBar = document.getElementById('healthBar');
+        const comboDisplay = document.getElementById('comboDisplay');
+        const comboCount = document.getElementById('comboCount');
+        const catMascot = document.getElementById('catMascot');
+        const levelInfo = document.getElementById('levelInfo');
+
+        // ============== INITIALIZATION ==============
+        function init() {
+            renderLevelGrid();
+            setupEventListeners();
+            setCatBackground('https://placecats.com/800/600');
+        }
+
+        function renderLevelGrid() {
+            levelGrid.innerHTML = LEVELS.map(level => {
+                const isUnlocked = unlockedLevels.includes(level.id);
+                return `
+                    <button class="level-btn difficulty-${level.tier} ${isUnlocked ? '' : 'locked'}"
+                            data-level="${level.id}" ${isUnlocked ? '' : 'disabled'}>
+                        <div class="level-icon">${level.catEmoji}</div>
+                        <div class="level-name">${level.name}</div>
+                        <div class="level-diff">${level.difficulty}</div>
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function setupEventListeners() {
+            // Level selection
+            levelGrid.addEventListener('click', (e) => {
+                const btn = e.target.closest('.level-btn');
+                if (btn && !btn.classList.contains('locked')) {
+                    const levelId = parseInt(btn.dataset.level);
+                    startLevel(levelId);
+                }
+            });
+
+            // Keyboard input
+            document.addEventListener('keydown', handleKeyDown);
+            document.addEventListener('keyup', handleKeyUp);
+
+            // Result buttons
+            document.getElementById('btnMenu').addEventListener('click', showMenu);
+            document.getElementById('btnRetry').addEventListener('click', () => startLevel(currentLevel.id));
+            document.getElementById('btnNext').addEventListener('click', () => {
+                const nextLevel = currentLevel.id + 1;
+                if (nextLevel <= LEVELS.length) startLevel(nextLevel);
+            });
+        }
+
+        // ============== GAME FUNCTIONS ==============
+        function setCatBackground(url) {
+            catBg.style.backgroundImage = `url(${url})`;
+        }
+
+        function startLevel(levelId) {
+            currentLevel = LEVELS.find(l => l.id === levelId);
+            if (!currentLevel) return;
+
+            // Reset state
+            score = 0;
+            health = 100;
+            combo = 0;
+            maxCombo = 0;
+            perfectCount = 0;
+            goodCount = 0;
+            okCount = 0;
+            missCount = 0;
+            spamCount = 0;
+            totalNotes = 0;
+            arrows = [];
+
+            // Update UI
+            setCatBackground(currentLevel.bgUrl);
+            document.getElementById('levelTitle').textContent = currentLevel.name;
+            document.getElementById('levelSubtitle').textContent = currentLevel.difficulty;
+            catMascot.textContent = currentLevel.catEmoji;
+            updateScore();
+            updateHealth();
+            updateCombo();
+
+            // Clear old arrows
+            document.querySelectorAll('.arrow').forEach(a => a.remove());
+
+            // Show game screen
+            menuScreen.classList.add('hidden');
+            resultsScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+
+            // Start countdown
+            startCountdown();
+        }
+
+        function startCountdown() {
+            if (isCountingDown) return; // Prevent multiple countdowns
+            isCountingDown = true;
+
+            let count = 3;
+            const countdownEl = document.createElement('div');
+            countdownEl.className = 'countdown';
+            countdownEl.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1000;';
+            document.body.appendChild(countdownEl);
+
+            const countInterval = setInterval(() => {
+                if (count > 0) {
+                    countdownEl.textContent = count;
+                    count--;
+                } else {
+                    countdownEl.textContent = 'GO!';
+                    setTimeout(() => {
+                        countdownEl.remove();
+                        isCountingDown = false;
+                        startGame();
+                    }, 500);
+                    clearInterval(countInterval);
+                }
+            }, 800);
+        }
+
+        function startGame() {
+            gameRunning = true;
+            gameStartTime = Date.now();
+            lastSpawnTime = 0;
+
+            // Start music
+            music = new Audio(currentLevel.musicUrl);
+            music.loop = true;
+            music.volume = 0.5;
+            music.play().catch(e => console.log('Audio autoplay blocked'));
+
+            // Game loop
+            requestAnimationFrame(gameLoop);
+
+            // End game after duration (clear any existing timer first)
+            if (gameEndTimeout) clearTimeout(gameEndTimeout);
+            gameEndTimeout = setTimeout(endGame, currentLevel.duration);
+        }
+
+        function gameLoop(timestamp) {
+            if (!gameRunning) return;
+
+            const elapsed = Date.now() - gameStartTime;
+
+            // Spawn arrows
+            if (elapsed - lastSpawnTime >= currentLevel.spawnRate) {
+                spawnArrows();
+                lastSpawnTime = elapsed;
+            }
+
+            // Update arrows
+            updateArrows();
+
+            // Check for missed arrows
+            checkMissedArrows();
+
+            // Continue loop
+            requestAnimationFrame(gameLoop);
+        }
+
+        function spawnArrows() {
+            const pattern = currentLevel.patterns[Math.floor(Math.random() * currentLevel.patterns.length)];
+            let directions = [];
+
+            switch (pattern) {
+                case 'single':
+                    directions = [randomDirection()];
+                    break;
+                case 'double':
+                    directions = [randomDirection()];
+                    let second = randomDirection();
+                    while (second === directions[0]) second = randomDirection();
+                    directions.push(second);
+                    break;
+                case 'triple':
+                    while (directions.length < 3) {
+                        let dir = randomDirection();
+                        if (!directions.includes(dir)) directions.push(dir);
+                    }
+                    break;
+                case 'burst':
+                    // Quick succession of singles
+                    directions = [randomDirection()];
+                    setTimeout(() => {
+                        if (gameRunning) createArrow(randomDirection());
+                    }, 150);
+                    setTimeout(() => {
+                        if (gameRunning) createArrow(randomDirection());
+                    }, 300);
+                    break;
+                case 'chaos':
+                    // 1-4 random arrows
+                    const count = Math.floor(Math.random() * 4) + 1;
+                    while (directions.length < count) {
+                        let dir = randomDirection();
+                        if (!directions.includes(dir)) directions.push(dir);
+                    }
+                    break;
+                case 'insane':
+                    // All 4 directions sometimes!
+                    if (Math.random() < 0.3) {
+                        directions = [...DIRECTIONS];
+                    } else {
+                        const cnt = Math.floor(Math.random() * 3) + 2;
+                        while (directions.length < cnt) {
+                            let dir = randomDirection();
+                            if (!directions.includes(dir)) directions.push(dir);
+                        }
+                    }
+                    break;
+            }
+
+            directions.forEach(dir => createArrow(dir));
+        }
+
+        function randomDirection() {
+            return DIRECTIONS[Math.floor(Math.random() * DIRECTIONS.length)];
+        }
+
+        function createArrow(direction) {
+            const lane = arrowTrack.querySelector(`[data-direction="${direction}"]`);
+            if (!lane) return;
+
+            const arrow = document.createElement('div');
+            arrow.className = `arrow ${direction}`;
+            arrow.textContent = ARROWS[direction];
+            arrow.style.top = '-70px';
+            arrow.dataset.direction = direction;
+            arrow.dataset.id = Date.now() + Math.random();
+
+            lane.appendChild(arrow);
+            arrows.push({
+                element: arrow,
+                direction: direction,
+                id: arrow.dataset.id,
+                y: -70,
+                hit: false
+            });
+
+            totalNotes++;
+        }
+
+        function updateArrows() {
+            arrows.forEach(arrow => {
+                if (arrow.hit) return;
+                arrow.y += currentLevel.arrowSpeed;
+                arrow.element.style.top = arrow.y + 'px';
+            });
+        }
+
+        function checkMissedArrows() {
+            arrows = arrows.filter(arrow => {
+                if (arrow.hit) {
+                    arrow.element.remove();
+                    return false;
+                }
+                // Arrow passed the target zone
+                if (arrow.y > 350) {
+                    handleMiss(arrow);
+                    arrow.element.remove();
+                    return false;
+                }
+                return true;
+            });
+        }
+
+        function handleKeyDown(e) {
+            if (!gameRunning) return;
+            if (e.repeat) return; // Ignore held keys - no unfair spam penalties!
+
+            const direction = KEYS[e.code];
+            if (!direction) return;
+
+            e.preventDefault();
+
+            // Visual feedback on target zone
+            const targetZone = arrowTrack.querySelector(`[data-direction="${direction}"] .target-zone`);
+            targetZone.classList.add('hit');
+            setTimeout(() => targetZone.classList.remove('hit'), 100);
+
+            // Find closest arrow in this lane
+            const laneArrows = arrows.filter(a => a.direction === direction && !a.hit);
+            if (laneArrows.length === 0) {
+                // SPAM PENALTY!
+                handleSpam(direction);
+                return;
+            }
+
+            // Get the closest arrow to the target zone (y around 280-350 is the zone)
+            const targetY = 280;
+            let closest = null;
+            let closestDist = Infinity;
+
+            laneArrows.forEach(arrow => {
+                const dist = Math.abs(arrow.y - targetY);
+                if (dist < closestDist) {
+                    closestDist = dist;
+                    closest = arrow;
+                }
+            });
+
+            // Check if arrow is in hit range (within 100px of target)
+            if (closest && closestDist < 100) {
+                handleHit(closest, closestDist);
+            } else {
+                handleSpam(direction);
+            }
+        }
+
+        function handleKeyUp(e) {
+            const direction = KEYS[e.code];
+            if (!direction) return;
+
+            const targetZone = arrowTrack.querySelector(`[data-direction="${direction}"] .target-zone`);
+            targetZone.classList.remove('hit');
+        }
+
+        function handleHit(arrow, distance) {
+            arrow.hit = true;
+
+            let rating, points, color;
+
+            if (distance < 20) {
+                rating = 'PERFECT!';
+                points = 300;
+                color = 'perfect';
+                perfectCount++;
+            } else if (distance < 50) {
+                rating = 'GOOD!';
+                points = 200;
+                color = 'good';
+                goodCount++;
+            } else {
+                rating = 'OK';
+                points = 100;
+                color = 'ok';
+                okCount++;
+            }
+
+            // Combo bonus
+            combo++;
+            if (combo > maxCombo) maxCombo = combo;
+            points += combo * 10;
+
+            score += points;
+            health = Math.min(100, health + 2);
+
+            updateScore();
+            updateHealth();
+            updateCombo();
+            showHitText(rating, color, arrow.element);
+
+            // Play meow sound for this direction
+            const meow = meowSounds[arrow.direction];
+            meow.currentTime = 0;
+            meow.play().catch(() => {});
+
+            // Happy cat!
+            catMascot.textContent = ['😸', '😺', '😻', '🐱'][Math.floor(Math.random() * 4)];
+        }
+
+        function handleMiss(arrow) {
+            missCount++;
+            combo = 0;
+            health -= 10;
+
+            updateHealth();
+            updateCombo();
+            showHitText('MISS', 'miss', arrow.element);
+
+            // Sad cat
+            catMascot.textContent = '😿';
+
+            // Play miss sound
+            missSound.currentTime = 0;
+            missSound.play().catch(() => {});
+
+            if (health <= 0) {
+                endGame(true);
+            }
+        }
+
+        function handleSpam(direction) {
+            // ANTI-SPAM: Penalize pressing keys when no arrow is there
+            spamCount++;
+            health -= 5;
+            score = Math.max(0, score - 50);
+            combo = 0;
+
+            updateScore();
+            updateHealth();
+            updateCombo();
+
+            const targetZone = arrowTrack.querySelector(`[data-direction="${direction}"] .target-zone`);
+            targetZone.classList.add('miss');
+            setTimeout(() => targetZone.classList.remove('miss'), 200);
+
+            showHitText('NO SPAM!', 'spam', targetZone);
+
+            // Angry cat
+            catMascot.textContent = '😾';
+
+            // Play miss sound
+            missSound.currentTime = 0;
+            missSound.play().catch(() => {});
+
+            if (health <= 0) {
+                endGame(true);
+            }
+        }
+
+        function showHitText(text, colorClass, nearElement) {
+            const hitText = document.createElement('div');
+            hitText.className = `hit-text ${colorClass}`;
+            hitText.textContent = text;
+
+            const rect = nearElement.getBoundingClientRect();
+            hitText.style.left = rect.left + rect.width / 2 - 50 + 'px';
+            hitText.style.top = rect.top + 'px';
+
+            document.body.appendChild(hitText);
+            setTimeout(() => hitText.remove(), 500);
+        }
+
+        function updateScore() {
+            scoreDisplay.textContent = score.toLocaleString();
+        }
+
+        function updateHealth() {
+            health = Math.max(0, Math.min(100, health));
+            healthBar.style.width = health + '%';
+            healthBar.style.background = health > 50 ?
+                'linear-gradient(90deg, #22c55e, #4ade80)' :
+                health > 25 ?
+                'linear-gradient(90deg, #f59e0b, #fbbf24)' :
+                'linear-gradient(90deg, #ef4444, #f87171)';
+        }
+
+        function updateCombo() {
+            if (combo > 5) {
+                comboDisplay.style.display = 'block';
+                comboCount.textContent = combo;
+            } else {
+                comboDisplay.style.display = 'none';
+            }
+        }
+
+        function endGame(failed = false) {
+            gameRunning = false;
+
+            // Clear the game end timer
+            if (gameEndTimeout) {
+                clearTimeout(gameEndTimeout);
+                gameEndTimeout = null;
+            }
+
+            if (music) {
+                music.pause();
+                music = null;
+            }
+
+            // Play fail sound if you failed
+            if (failed) {
+                failSound.currentTime = 0;
+                failSound.play().catch(() => {});
+            }
+
+            // Calculate results
+            const hitNotes = perfectCount + goodCount + okCount;
+            const accuracyPercent = totalNotes > 0 ? Math.round((hitNotes / totalNotes) * 100) : 0;
+
+            let grade, gradeClass;
+            if (failed) {
+                grade = 'F';
+                gradeClass = 'grade-f';
+            } else if (accuracyPercent >= 95 && perfectCount > hitNotes * 0.8) {
+                grade = 'S';
+                gradeClass = 'grade-s';
+            } else if (accuracyPercent >= 90) {
+                grade = 'A';
+                gradeClass = 'grade-a';
+            } else if (accuracyPercent >= 75) {
+                grade = 'B';
+                gradeClass = 'grade-b';
+            } else if (accuracyPercent >= 50) {
+                grade = 'C';
+                gradeClass = 'grade-c';
+            } else {
+                grade = 'F';
+                gradeClass = 'grade-f';
+            }
+
+            // Unlock next level
+            if (!failed && grade !== 'F' && currentLevel.id < LEVELS.length) {
+                const nextLevel = currentLevel.id + 1;
+                if (!unlockedLevels.includes(nextLevel)) {
+                    unlockedLevels.push(nextLevel);
+                    localStorage.setItem('kittenRhythmUnlocked', JSON.stringify(unlockedLevels));
+                }
+                document.getElementById('btnNext').style.display = 'inline-block';
+            } else {
+                document.getElementById('btnNext').style.display = 'none';
+            }
+
+            // Show results
+            document.getElementById('resultsTitle').textContent = failed ? 'Game Over!' : 'Level Complete!';
+            const gradeEl = document.getElementById('resultsGrade');
+            gradeEl.textContent = grade;
+            gradeEl.className = 'results-grade ' + gradeClass;
+            document.getElementById('finalScore').textContent = score.toLocaleString();
+            document.getElementById('maxCombo').textContent = maxCombo;
+            document.getElementById('perfectCount').textContent = perfectCount;
+            document.getElementById('accuracy').textContent = accuracyPercent + '%';
+
+            gameScreen.classList.add('hidden');
+            resultsScreen.classList.remove('hidden');
+        }
+
+        function showMenu() {
+            if (music) {
+                music.pause();
+                music = null;
+            }
+            gameRunning = false;
+            isCountingDown = false;
+
+            // Clear any pending game timer
+            if (gameEndTimeout) {
+                clearTimeout(gameEndTimeout);
+                gameEndTimeout = null;
+            }
+
+            renderLevelGrid();
+            setCatBackground('https://placecats.com/800/600');
+
+            gameScreen.classList.add('hidden');
+            resultsScreen.classList.add('hidden');
+            menuScreen.classList.remove('hidden');
+        }
+
+        // Start the game!
+        init();
+    </script>
+</body>
+</html>
