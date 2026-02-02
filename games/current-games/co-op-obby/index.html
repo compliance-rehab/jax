@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Co-op Obby - jaxmakes.games</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .navbar {
+            padding: 20px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .back-home {
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 700;
+            transition: all 0.2s;
+        }
+        .back-home:hover { color: #fff; }
+        .game-name {
+            font-size: 0.95rem;
+            font-weight: 700;
+            opacity: 0.8;
+        }
+
+        .game-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 10px 24px 60px;
+        }
+        .game-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .game-header h1 {
+            font-size: 2.2rem;
+            font-weight: 900;
+            margin-bottom: 5px;
+            text-shadow: 3px 3px 0 rgba(0,0,0,0.3);
+            background: linear-gradient(135deg, #00d9ff, #ff6b6b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .game-header p {
+            font-size: 1rem;
+            opacity: 0.8;
+        }
+
+        .game-area {
+            background: #0f0f23;
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            border: 2px solid #333;
+        }
+
+        canvas {
+            border-radius: 8px;
+            background: #1a1a2e;
+        }
+
+        /* Lobby UI */
+        #lobby {
+            text-align: center;
+            padding: 40px;
+        }
+        #lobby h2 {
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+        .btn {
+            background: linear-gradient(135deg, #00d9ff 0%, #0099cc 100%);
+            border: none;
+            padding: 14px 36px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #fff;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            box-shadow: 0 4px 15px rgba(0, 217, 255, 0.4);
+            margin: 10px;
+        }
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 217, 255, 0.5);
+        }
+        .btn-orange {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%);
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+        }
+        .btn-orange:hover {
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.5);
+        }
+
+        #roomCode {
+            font-size: 2rem;
+            padding: 15px 30px;
+            border-radius: 12px;
+            border: 3px solid #00d9ff;
+            background: #0a0a1a;
+            color: #00d9ff;
+            text-align: center;
+            width: 200px;
+            font-family: monospace;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        #joinCode {
+            font-size: 1.5rem;
+            padding: 12px 20px;
+            border-radius: 12px;
+            border: 3px solid #ff6b6b;
+            background: #0a0a1a;
+            color: #ff6b6b;
+            text-align: center;
+            width: 180px;
+            font-family: monospace;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 15px 25px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            font-size: 1rem;
+        }
+        .status.connected {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+        }
+
+        .join-section {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 1px solid #333;
+        }
+
+        #gameUI {
+            display: none;
+            width: 100%;
+        }
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 0 10px;
+        }
+        .level-display {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #00d9ff;
+        }
+        .player-indicators {
+            display: flex;
+            gap: 20px;
+        }
+        .player-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 15px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+        }
+        .player-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+        .player-dot.p1 { background: #00d9ff; }
+        .player-dot.p2 { background: #ff6b6b; }
+
+        .controls-hint {
+            margin-top: 15px;
+            font-size: 0.85rem;
+            opacity: 0.6;
+            text-align: center;
+        }
+
+        .level-complete {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.95);
+            padding: 50px 80px;
+            border-radius: 20px;
+            text-align: center;
+            z-index: 100;
+            border: 3px solid #00ff88;
+            display: none;
+        }
+        .level-complete h2 {
+            font-size: 2.5rem;
+            color: #00ff88;
+            margin-bottom: 15px;
+        }
+        .level-complete p {
+            font-size: 1.2rem;
+            opacity: 0.8;
+        }
+
+        .game-complete {
+            border-color: gold;
+        }
+        .game-complete h2 {
+            color: gold;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="../../index.html" class="back-home">← Back to jaxmakes.games</a>
+        <span class="game-name">Co-op Obby</span>
+    </nav>
+
+    <div class="game-container">
+        <div class="game-header">
+            <h1>Co-op Obby</h1>
+            <p>Work together to beat all 10 levels! Jump on heads, hit buttons, and reach the portal together.</p>
+        </div>
+
+        <div class="game-area">
+            <!-- Lobby -->
+            <div id="lobby">
+                <h2>2-Player Co-op Platformer</h2>
+                <p style="opacity: 0.7; margin-bottom: 30px;">Both players must reach the portal to complete each level!</p>
+
+                <div>
+                    <button class="btn" onclick="createRoom()">Create Room</button>
+                </div>
+
+                <div id="roomInfo" style="display: none; margin-top: 25px;">
+                    <p style="margin-bottom: 10px;">Share this code with your friend:</p>
+                    <input type="text" id="roomCode" readonly>
+                    <p style="margin-top: 15px; opacity: 0.6; font-size: 0.9rem;">Waiting for player 2...</p>
+                </div>
+
+                <div class="join-section">
+                    <p style="margin-bottom: 15px;">Or join a friend's room:</p>
+                    <input type="text" id="joinCode" placeholder="CODE" maxlength="4">
+                    <br>
+                    <button class="btn btn-orange" onclick="joinRoom()">Join Room</button>
+                </div>
+
+                <div id="status" class="status" style="display: none;"></div>
+            </div>
+
+            <!-- Game UI -->
+            <div id="gameUI">
+                <div class="game-info">
+                    <span class="level-display">Level <span id="levelNum">1</span> / 10</span>
+                    <div class="player-indicators">
+                        <div class="player-indicator">
+                            <div class="player-dot p1"></div>
+                            <span>You (WASD)</span>
+                        </div>
+                        <div class="player-indicator">
+                            <div class="player-dot p2"></div>
+                            <span>Friend</span>
+                        </div>
+                    </div>
+                </div>
+                <canvas id="game" width="850" height="500"></canvas>
+                <p class="controls-hint">WASD or Arrow Keys to move • Jump on your friend's head to reach high places!</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="levelComplete" class="level-complete">
+        <h2>Level Complete!</h2>
+        <p>Get ready for the next level...</p>
+    </div>
+
+    <div id="gameComplete" class="level-complete game-complete" style="display: none;">
+        <h2>YOU BEAT THE GAME!</h2>
+        <p>Amazing teamwork! You completed all 10 levels together!</p>
+        <button class="btn" style="margin-top: 25px;" onclick="restartGame()">Play Again</button>
+    </div>
+
+    <script>
+        // ============= GAME CONFIG =============
+        const canvas = document.getElementById('game');
+        const ctx = canvas.getContext('2d');
+        const W = canvas.width;
+        const H = canvas.height;
+
+        const GRAVITY = 0.6;
+        const JUMP_FORCE = -14;
+        const MOVE_SPEED = 5;
+        const PLAYER_W = 35;
+        const PLAYER_H = 45;
+
+        // ============= NETWORKING =============
+        let peer = null;
+        let conn = null;
+        let isHost = false;
+        let myPlayerNum = 1;
+        let gameStarted = false;
+
+        function generateCode() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let code = '';
+            for (let i = 0; i < 4; i++) {
+                code += chars[Math.floor(Math.random() * chars.length)];
+            }
+            return code;
+        }
+
+        function createRoom() {
+            const code = generateCode();
+            document.getElementById('roomInfo').style.display = 'block';
+            document.getElementById('roomCode').value = code;
+            showStatus('Connecting...', false);
+
+            peer = new Peer('coopobby-' + code);
+
+            peer.on('open', () => {
+                showStatus('Room created! Waiting for player 2...', false);
+                isHost = true;
+                myPlayerNum = 1;
+            });
+
+            peer.on('connection', (connection) => {
+                conn = connection;
+                setupConnection();
+            });
+
+            peer.on('error', (err) => {
+                showStatus('Error: ' + err.type, false);
+            });
+        }
+
+        function joinRoom() {
+            const code = document.getElementById('joinCode').value.toUpperCase();
+            if (code.length !== 4) {
+                showStatus('Please enter a 4-letter code', false);
+                return;
+            }
+
+            showStatus('Connecting to room...', false);
+
+            peer = new Peer();
+
+            peer.on('open', () => {
+                conn = peer.connect('coopobby-' + code);
+                conn.on('open', () => {
+                    isHost = false;
+                    myPlayerNum = 2;
+                    setupConnection();
+                });
+                conn.on('error', (err) => {
+                    showStatus('Could not connect: ' + err, false);
+                });
+            });
+
+            peer.on('error', (err) => {
+                if (err.type === 'peer-unavailable') {
+                    showStatus('Room not found! Check the code.', false);
+                } else {
+                    showStatus('Error: ' + err.type, false);
+                }
+            });
+        }
+
+        function setupConnection() {
+            showStatus('Connected! Starting game...', true);
+
+            conn.on('data', (data) => {
+                handleNetworkData(data);
+            });
+
+            conn.on('close', () => {
+                showStatus('Player disconnected!', false);
+                gameStarted = false;
+            });
+
+            setTimeout(() => {
+                startGame();
+            }, 1000);
+        }
+
+        function showStatus(msg, connected) {
+            const status = document.getElementById('status');
+            status.style.display = 'block';
+            status.textContent = msg;
+            status.className = 'status' + (connected ? ' connected' : '');
+        }
+
+        function sendData(data) {
+            if (conn && conn.open) {
+                conn.send(data);
+            }
+        }
+
+        function handleNetworkData(data) {
+            if (data.type === 'playerPos') {
+                // Update other player's position
+                const other = myPlayerNum === 1 ? player2 : player1;
+                other.x = data.x;
+                other.y = data.y;
+                other.vx = data.vx;
+                other.vy = data.vy;
+                other.onGround = data.onGround;
+            } else if (data.type === 'buttonPress') {
+                // Other player pressed a button
+                activateButton(data.buttonId, false);
+            } else if (data.type === 'reachedPortal') {
+                // Other player reached portal
+                const other = myPlayerNum === 1 ? player2 : player1;
+                other.atPortal = true;
+                checkLevelComplete();
+            } else if (data.type === 'nextLevel') {
+                // Host says go to next level
+                currentLevel++;
+                loadLevel(currentLevel);
+            } else if (data.type === 'restart') {
+                currentLevel = 1;
+                loadLevel(1);
+            }
+        }
+
+        // ============= GAME STATE =============
+        let currentLevel = 1;
+        let player1, player2;
+        let platforms = [];
+        let buttons = [];
+        let bridges = [];
+        let spikes = [];
+        let portal = null;
+        let keys = {};
+
+        function createPlayer(num, x, y) {
+            return {
+                x: x,
+                y: y,
+                vx: 0,
+                vy: 0,
+                onGround: false,
+                atPortal: false,
+                color: num === 1 ? '#00d9ff' : '#ff6b6b',
+                eyeColor: num === 1 ? '#0099cc' : '#cc4444',
+                num: num
+            };
+        }
+
+        // ============= LEVELS =============
+        const levels = [
+            // Level 1: Introduction - Simple jumps, learn head-bouncing
+            {
+                platforms: [
+                    { x: 0, y: H - 30, w: 200, h: 30 },
+                    { x: 280, y: H - 30, w: 150, h: 30 },
+                    { x: 510, y: H - 30, w: 150, h: 30 },
+                    { x: 740, y: H - 30, w: 110, h: 30 },
+                ],
+                buttons: [],
+                bridges: [],
+                spikes: [],
+                portal: { x: 780, y: H - 80 },
+                spawns: [{ x: 50, y: H - 80 }, { x: 120, y: H - 80 }],
+                hint: "Jump across! Try jumping on your friend's head!"
+            },
+            // Level 2: First Button - One player hits button to make bridge for other
+            {
+                platforms: [
+                    { x: 0, y: H - 30, w: 250, h: 30 },
+                    { x: 0, y: H - 150, w: 100, h: 20 },
+                    { x: 550, y: H - 30, w: 300, h: 30 },
+                ],
+                buttons: [
+                    { x: 30, y: H - 150 - 15, w: 50, h: 15, bridgeId: 0, color: '#ffcc00' }
+                ],
+                bridges: [
+                    { x: 250, y: H - 60, w: 300, h: 20, active: false, id: 0 }
+                ],
+                spikes: [],
+                portal: { x: 780, y: H - 80 },
+                spawns: [{ x: 50, y: H - 80 }, { x: 150, y: H - 80 }],
+                hint: "One player stands on the yellow button!"
+            },
+            // Level 3: Head Jump Required - Gap too big, need to bounce (first spikes!)
+            {
+                platforms: [
+                    { x: 0, y: H - 30, w: 200, h: 30 },
+                    { x: 450, y: H - 30, w: 400, h: 30 },
+                    { x: 450, y: H - 150, w: 150, h: 20 },
+                ],
+                buttons: [
+                    { x: 480, y: H - 150 - 15, w: 50, h: 15, bridgeId: 0, color: '#ffcc00' }
+                ],
+                bridges: [
+                    { x: 200, y: H - 80, w: 250, h: 20, active: false, id: 0 }
+                ],
+                spikes: [
+                    { x: 700, y: H - 30, w: 60 }
+                ],
+                portal: { x: 780, y: H - 80 },
+                spawns: [{ x: 50, y: H - 80 }, { x: 120, y: H - 80 }],
+                hint: "Watch out for spikes! Jump on your friend's head!"
+            },
+            // Level 4: Double Buttons - Both need to hit buttons
+            {
+                platforms: [
+                    { x: 0, y: H - 30, w: 150, h: 30 },
+                    { x: 0, y: H - 180, w: 80, h: 20 },
+                    { x: 200, y: H - 30, w: 100, h: 30 },
+                    { x: 350, y: H - 120, w: 100, h: 20 },
+                    { x: 600, y: H - 30, w: 250, h: 30 },
+                ],
+                buttons: [
+                    { x: 20, y: H - 180 - 15, w: 50, h: 15, bridgeId: 0, color: '#ffcc00' },
+                    { x: 370, y: H - 120 - 15, w: 50, h: 15, bridgeId: 1, color: '#ff66ff' }
+                ],
+                bridges: [
+                    { x: 150, y: H - 100, w: 50, h: 15, active: false, id: 0 },
+                    { x: 450, y: H - 60, w: 150, h: 20, active: false, id: 1 }
+                ],
+                spikes: [
+                    { x: 220, y: H - 30, w: 40 },
+                    { x: 750, y: H - 30, w: 30 }
+                ],
+                portal: { x: 780, y: H - 80 },
+                spawns: [{ x: 50, y: H - 80 }, { x: 80, y: H - 80 }],
+                hint: "Each player needs to activate a button! Avoid spikes!"
+            },
+            // Level 5: Vertical Challenge - Stack to reach high
+            {
+                platforms: [
+                    { x: 0, y: H - 30, w: 300, h: 30 },
+                    { x: 200, y: H - 200, w: 150, h: 20 },
+                    { x: 450, y: H - 300, w: 150, h: 20 },
+                    { x: 650, y: H - 30, w: 200, h: 30 },
+                ],
+                buttons: [
+                    { x: 230, y: H - 200 - 15, w: 50, h: 15, bridgeId: 0, color: '#ffcc00' },
+                    { x: 480, y: H - 300 - 15, w: 50, h: 15, bridgeId: 1, color: '#ff66ff' }
+                ],
+                spikes: [
+                    { x: 300, y: H - 200, w: 50 },
+                    { x: 700, y: H - 30, w: 50 }
+                ],
+                bridges: [
+                    { x: 350, y: H - 250, w: 100, h: 15, active: false, id: 0 },
+                    { x: 550, y: H - 150, w: 100, h: 15, active: false, id: 1 }
+                ],
+                portal: { x: 750, y: H - 80 },
+                spawns: [{ x: 50, y: H - 80 }, { x: 120, y: H - 80 }],
+                hint: "Climb up together using head jumps and buttons!"
+            },
+            // Level 6: Trust Bridge - Stand on button while friend crosses
+            {
+                platforms: [
+                    { x: 0, y: H - 30, w: 200, h: 30 },
+                    { x: 0, y: H - 200, w: 120, h: 20 },
+                    { x: 500, y: H - 200, w: 150, h: 20 },
+                    { x: 700, y: H - 30, w: 150, h: 30 },
+                ],
+                buttons: [
+                    { x: 30, y: H - 200 - 15, w: 60, h: 15, bridgeId: 0, color: '#ffcc00', hold: true },
+                    { x: 530, y: H - 200 - 15, w: 60, h: 15, bridgeId: 1, color: '#ff66ff', hold: true }
+                ],
+                bridges: [
+                    { x: 120, y: H - 200, w: 380, h: 15, active: false, id: 0 },
+                    { x: 500, y: H - 100, w: 200, h: 15, active: false, id: 1 }
+                ],
+                spikes: [
+                    { x: 600, y: H - 200, w: 50 },
+                    { x: 750, y: H - 30, w: 40 }
+                ],
+                portal: { x: 800, y: H - 80 },
+                spawns: [{ x: 50, y: H - 80 }, { x: 120, y: H - 80 }],
+                hint: "HOLD buttons to keep bridges active! Watch for spikes!"
+            },
+            // Level 7: The Maze
+            {
+                platforms: [
+                    { x: 0, y: H - 30, w: 130, h: 30 },
+                    { x: 0, y: H - 130, w: 80, h: 20 },
+                    { x: 180, y: H - 200, w: 80, h: 20 },
+                    { x: 350, y: H - 130, w: 100, h: 20 },
+                    { x: 350, y: H - 280, w: 80, h: 20 },
+                    { x: 550, y: H - 200, w: 80, h: 20 },
+                    { x: 700, y: H - 30, w: 150, h: 30 },
+                ],
+                buttons: [
+                    { x: 15, y: H - 130 - 15, w: 50, h: 15, bridgeId: 0, color: '#ffcc00' },
+                    { x: 365, y: H - 280 - 15, w: 50, h: 15, bridgeId: 1, color: '#ff66ff' },
+                    { x: 560, y: H - 200 - 15, w: 50, h: 15, bridgeId: 2, color: '#66ff66' }
+                ],
+                bridges: [
+                    { x: 80, y: H - 130, w: 100, h: 15, active: false, id: 0 },
+                    { x: 260, y: H - 200, w: 90, h: 15, active: false, id: 1 },
+                    { x: 630, y: H - 100, w: 70, h: 15, active: false, id: 2 }
+                ],
+                spikes: [
+                    { x: 220, y: H - 200, w: 40 },
+                    { x: 400, y: H - 130, w: 50 },
+                    { x: 750, y: H - 30, w: 40 }
+                ],
+                portal: { x: 800, y: H - 80 },
+                spawns: [{ x: 30, y: H - 80 }, { x: 80, y: H - 80 }],
+                hint: "Navigate the maze - spikes everywhere!"
+            },
+            // Level 8: The Tower
+            {
+                platforms: [
+                    { x: 0, y: H - 30, w: 200, h: 30 },
+                    { x: 300, y: H - 30, w: 250, h: 30 },
+                    { x: 350, y: H - 130, w: 150, h: 20 },
+                    { x: 350, y: H - 230, w: 150, h: 20 },
+                    { x: 350, y: H - 330, w: 150, h: 20 },
+                    { x: 600, y: H - 400, w: 250, h: 20 },
+                ],
+                buttons: [
+                    { x: 370, y: H - 130 - 15, w: 50, h: 15, bridgeId: 0, color: '#ffcc00', hold: true },
+                    { x: 370, y: H - 230 - 15, w: 50, h: 15, bridgeId: 1, color: '#ff66ff', hold: true },
+                    { x: 370, y: H - 330 - 15, w: 50, h: 15, bridgeId: 2, color: '#66ff66', hold: true }
+                ],
+                bridges: [
+                    { x: 200, y: H - 80, w: 100, h: 15, active: false, id: 0 },
+                    { x: 500, y: H - 180, w: 100, h: 15, active: false, id: 1 },
+                    { x: 500, y: H - 330, w: 100, h: 15, active: false, id: 2 }
+                ],
+                spikes: [
+                    { x: 450, y: H - 130, w: 50 },
+                    { x: 450, y: H - 230, w: 50 },
+                    { x: 450, y: H - 330, w: 50 },
+                    { x: 750, y: H - 400, w: 60 }
+                ],
+                portal: { x: 800, y: H - 450 },
+                spawns: [{ x: 50, y: H - 80 }, { x: 120, y: H - 80 }],
+                hint: "Climb the tower! Spikes guard each level!"
+            },
+            // Level 9: The Gauntlet
+            {
+                platforms: [
+                    { x: 0, y: H - 30, w: 120, h: 30 },
+                    { x: 0, y: H - 150, w: 60, h: 20 },
+                    { x: 200, y: H - 100, w: 80, h: 20 },
+                    { x: 380, y: H - 180, w: 80, h: 20 },
+                    { x: 550, y: H - 100, w: 80, h: 20 },
+                    { x: 550, y: H - 280, w: 80, h: 20 },
+                    { x: 720, y: H - 30, w: 130, h: 30 },
+                ],
+                buttons: [
+                    { x: 10, y: H - 150 - 15, w: 40, h: 15, bridgeId: 0, color: '#ffcc00' },
+                    { x: 210, y: H - 100 - 15, w: 40, h: 15, bridgeId: 1, color: '#ff66ff', hold: true },
+                    { x: 390, y: H - 180 - 15, w: 40, h: 15, bridgeId: 2, color: '#66ff66' },
+                    { x: 560, y: H - 280 - 15, w: 40, h: 15, bridgeId: 3, color: '#ff9900', hold: true }
+                ],
+                bridges: [
+                    { x: 60, y: H - 150, w: 140, h: 15, active: false, id: 0 },
+                    { x: 280, y: H - 140, w: 100, h: 15, active: false, id: 1 },
+                    { x: 460, y: H - 180, w: 90, h: 15, active: false, id: 2 },
+                    { x: 630, y: H - 200, w: 90, h: 15, active: false, id: 3 }
+                ],
+                spikes: [
+                    { x: 80, y: H - 30, w: 40 },
+                    { x: 250, y: H - 100, w: 30 },
+                    { x: 420, y: H - 180, w: 40 },
+                    { x: 590, y: H - 100, w: 40 },
+                    { x: 770, y: H - 30, w: 40 }
+                ],
+                portal: { x: 800, y: H - 80 },
+                spawns: [{ x: 30, y: H - 80 }, { x: 70, y: H - 80 }],
+                hint: "The gauntlet! Spikes everywhere - be careful!"
+            },
+            // Level 10: The Final Challenge
+            {
+                platforms: [
+                    { x: 0, y: H - 30, w: 100, h: 30 },
+                    { x: 0, y: H - 180, w: 70, h: 20 },
+                    { x: 150, y: H - 280, w: 70, h: 20 },
+                    { x: 300, y: H - 350, w: 80, h: 20 },
+                    { x: 300, y: H - 150, w: 80, h: 20 },
+                    { x: 500, y: H - 250, w: 80, h: 20 },
+                    { x: 650, y: H - 150, w: 80, h: 20 },
+                    { x: 750, y: H - 30, w: 100, h: 30 },
+                ],
+                buttons: [
+                    { x: 10, y: H - 180 - 15, w: 45, h: 15, bridgeId: 0, color: '#ffcc00', hold: true },
+                    { x: 160, y: H - 280 - 15, w: 45, h: 15, bridgeId: 1, color: '#ff66ff' },
+                    { x: 310, y: H - 350 - 15, w: 45, h: 15, bridgeId: 2, color: '#66ff66', hold: true },
+                    { x: 510, y: H - 250 - 15, w: 45, h: 15, bridgeId: 3, color: '#ff9900' },
+                    { x: 660, y: H - 150 - 15, w: 45, h: 15, bridgeId: 4, color: '#9966ff', hold: true }
+                ],
+                bridges: [
+                    { x: 70, y: H - 180, w: 80, h: 15, active: false, id: 0 },
+                    { x: 220, y: H - 280, w: 80, h: 15, active: false, id: 1 },
+                    { x: 380, y: H - 300, w: 120, h: 15, active: false, id: 2 },
+                    { x: 580, y: H - 200, w: 70, h: 15, active: false, id: 3 },
+                    { x: 730, y: H - 100, w: 70, h: 15, active: false, id: 4 }
+                ],
+                spikes: [
+                    { x: 60, y: H - 30, w: 40 },
+                    { x: 340, y: H - 150, w: 40 },
+                    { x: 540, y: H - 250, w: 40 },
+                    { x: 690, y: H - 150, w: 40 },
+                    { x: 790, y: H - 30, w: 30 }
+                ],
+                portal: { x: 800, y: H - 80 },
+                spawns: [{ x: 30, y: H - 80 }, { x: 60, y: H - 80 }],
+                hint: "THE FINAL LEVEL! Spikes and teamwork - you got this!"
+            }
+        ];
+
+        // ============= LEVEL LOADING =============
+        function loadLevel(num) {
+            const level = levels[num - 1];
+            platforms = level.platforms.map(p => ({ ...p }));
+            buttons = level.buttons.map(b => ({ ...b, pressed: false }));
+            bridges = level.bridges.map(b => ({ ...b }));
+            spikes = (level.spikes || []).map(s => ({ ...s, h: 20 }));
+            portal = { ...level.portal, w: 50, h: 70 };
+
+            const spawn1 = level.spawns[0];
+            const spawn2 = level.spawns[1];
+
+            if (myPlayerNum === 1) {
+                player1 = createPlayer(1, spawn1.x, spawn1.y);
+                player2 = createPlayer(2, spawn2.x, spawn2.y);
+            } else {
+                player1 = createPlayer(1, spawn1.x, spawn1.y);
+                player2 = createPlayer(2, spawn2.x, spawn2.y);
+            }
+
+            player1.atPortal = false;
+            player2.atPortal = false;
+
+            document.getElementById('levelNum').textContent = num;
+
+            // Hide level complete popup
+            document.getElementById('levelComplete').style.display = 'none';
+            document.getElementById('gameComplete').style.display = 'none';
+        }
+
+        // ============= GAME START =============
+        function startGame() {
+            document.getElementById('lobby').style.display = 'none';
+            document.getElementById('gameUI').style.display = 'block';
+
+            // Update UI based on player number
+            const indicators = document.querySelectorAll('.player-indicator span');
+            if (myPlayerNum === 1) {
+                indicators[0].textContent = 'You (WASD)';
+                indicators[1].textContent = 'Friend';
+            } else {
+                indicators[0].textContent = 'Friend';
+                indicators[1].textContent = 'You (WASD)';
+            }
+
+            loadLevel(1);
+            gameStarted = true;
+            gameLoop();
+        }
+
+        function restartGame() {
+            currentLevel = 1;
+            loadLevel(1);
+            if (isHost) {
+                sendData({ type: 'restart' });
+            }
+        }
+
+        // ============= INPUT =============
+        document.addEventListener('keydown', (e) => {
+            keys[e.key.toLowerCase()] = true;
+            keys[e.code] = true;
+        });
+        document.addEventListener('keyup', (e) => {
+            keys[e.key.toLowerCase()] = false;
+            keys[e.code] = false;
+        });
+
+        // ============= PHYSICS & COLLISION =============
+        function getMyPlayer() {
+            return myPlayerNum === 1 ? player1 : player2;
+        }
+
+        function getOtherPlayer() {
+            return myPlayerNum === 1 ? player2 : player1;
+        }
+
+        function respawnPlayer(player) {
+            const level = levels[currentLevel - 1];
+            const spawn = player.num === 1 ? level.spawns[0] : level.spawns[1];
+            player.x = spawn.x;
+            player.y = spawn.y;
+            player.vy = 0;
+            player.vx = 0;
+            player.atPortal = false;
+        }
+
+        function updatePlayer(player, isMe) {
+            if (!isMe) return; // Only control your own player
+
+            // Input
+            let moveX = 0;
+            if (keys['a'] || keys['arrowleft']) moveX = -1;
+            if (keys['d'] || keys['arrowright']) moveX = 1;
+
+            player.vx = moveX * MOVE_SPEED;
+
+            if ((keys['w'] || keys['arrowup'] || keys[' ']) && player.onGround) {
+                player.vy = JUMP_FORCE;
+                player.onGround = false;
+            }
+
+            // Gravity
+            player.vy += GRAVITY;
+
+            // Move X
+            player.x += player.vx;
+
+            // Collision X with platforms
+            const allPlatforms = [...platforms, ...bridges.filter(b => b.active)];
+            for (const plat of allPlatforms) {
+                if (rectCollision(player.x, player.y, PLAYER_W, PLAYER_H, plat.x, plat.y, plat.w, plat.h)) {
+                    if (player.vx > 0) {
+                        player.x = plat.x - PLAYER_W;
+                    } else if (player.vx < 0) {
+                        player.x = plat.x + plat.w;
+                    }
+                }
+            }
+
+            // Move Y
+            player.y += player.vy;
+            player.onGround = false;
+
+            // Collision Y with platforms
+            for (const plat of allPlatforms) {
+                if (rectCollision(player.x, player.y, PLAYER_W, PLAYER_H, plat.x, plat.y, plat.w, plat.h)) {
+                    if (player.vy > 0) {
+                        player.y = plat.y - PLAYER_H;
+                        player.vy = 0;
+                        player.onGround = true;
+                    } else if (player.vy < 0) {
+                        player.y = plat.y + plat.h;
+                        player.vy = 0;
+                    }
+                }
+            }
+
+            // Player-to-player collision (can stand on heads!)
+            const other = getOtherPlayer();
+            if (rectCollision(player.x, player.y, PLAYER_W, PLAYER_H, other.x, other.y, PLAYER_W, PLAYER_H)) {
+                // Check if landing on top
+                const prevBottom = player.y - player.vy + PLAYER_H;
+                const otherTop = other.y;
+
+                if (player.vy > 0 && prevBottom <= otherTop + 10) {
+                    // Landing on other player's head
+                    player.y = other.y - PLAYER_H;
+                    player.vy = 0;
+                    player.onGround = true;
+                } else {
+                    // Side collision - push apart
+                    const overlap = (PLAYER_W + PLAYER_W) / 2 - Math.abs((player.x + PLAYER_W/2) - (other.x + PLAYER_W/2));
+                    if (player.x < other.x) {
+                        player.x -= overlap / 2;
+                    } else {
+                        player.x += overlap / 2;
+                    }
+                }
+            }
+
+            // Keep in bounds
+            if (player.x < 0) player.x = 0;
+            if (player.x > W - PLAYER_W) player.x = W - PLAYER_W;
+            if (player.y > H) {
+                // Respawn from falling
+                respawnPlayer(player);
+            }
+
+            // Check spikes - respawn if hit
+            for (const spike of spikes) {
+                // Spike hitbox is triangular, but we use a smaller rect for fairness
+                const spikeHitbox = { x: spike.x + 5, y: spike.y - spike.h + 5, w: spike.w - 10, h: spike.h - 5 };
+                if (rectCollision(player.x, player.y, PLAYER_W, PLAYER_H, spikeHitbox.x, spikeHitbox.y, spikeHitbox.w, spikeHitbox.h)) {
+                    respawnPlayer(player);
+                    break;
+                }
+            }
+
+            // Check buttons
+            for (const btn of buttons) {
+                const onButton = rectCollision(player.x, player.y, PLAYER_W, PLAYER_H, btn.x, btn.y - 10, btn.w, btn.h + 10);
+                if (onButton && !btn.pressed) {
+                    activateButton(btn.bridgeId, true);
+                    sendData({ type: 'buttonPress', buttonId: btn.bridgeId });
+                }
+                if (btn.hold && btn.pressed && !onButton) {
+                    // Check if other player is on it
+                    const otherOnBtn = rectCollision(other.x, other.y, PLAYER_W, PLAYER_H, btn.x, btn.y - 10, btn.w, btn.h + 10);
+                    if (!otherOnBtn) {
+                        deactivateButton(btn.bridgeId);
+                    }
+                }
+            }
+
+            // Check portal
+            if (rectCollision(player.x, player.y, PLAYER_W, PLAYER_H, portal.x, portal.y, portal.w, portal.h)) {
+                if (!player.atPortal) {
+                    player.atPortal = true;
+                    sendData({ type: 'reachedPortal' });
+                    checkLevelComplete();
+                }
+            }
+
+            // Send position to other player
+            sendData({
+                type: 'playerPos',
+                x: player.x,
+                y: player.y,
+                vx: player.vx,
+                vy: player.vy,
+                onGround: player.onGround
+            });
+        }
+
+        function rectCollision(x1, y1, w1, h1, x2, y2, w2, h2) {
+            return x1 < x2 + w2 && x1 + w1 > x2 && y1 < y2 + h2 && y1 + h1 > y2;
+        }
+
+        function activateButton(bridgeId, playSound) {
+            for (const btn of buttons) {
+                if (btn.bridgeId === bridgeId) {
+                    btn.pressed = true;
+                }
+            }
+            for (const bridge of bridges) {
+                if (bridge.id === bridgeId) {
+                    bridge.active = true;
+                }
+            }
+        }
+
+        function deactivateButton(bridgeId) {
+            for (const btn of buttons) {
+                if (btn.bridgeId === bridgeId) {
+                    btn.pressed = false;
+                }
+            }
+            for (const bridge of bridges) {
+                if (bridge.id === bridgeId) {
+                    bridge.active = false;
+                }
+            }
+        }
+
+        function checkLevelComplete() {
+            if (player1.atPortal && player2.atPortal) {
+                if (currentLevel >= 10) {
+                    // Game complete!
+                    document.getElementById('gameComplete').style.display = 'block';
+                } else {
+                    // Next level
+                    document.getElementById('levelComplete').style.display = 'block';
+                    setTimeout(() => {
+                        if (isHost) {
+                            currentLevel++;
+                            loadLevel(currentLevel);
+                            sendData({ type: 'nextLevel' });
+                        }
+                    }, 2000);
+                }
+            }
+        }
+
+        // ============= RENDERING =============
+        function draw() {
+            // Clear
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, W, H);
+
+            // Draw grid pattern
+            ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+            ctx.lineWidth = 1;
+            for (let x = 0; x < W; x += 50) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, H);
+                ctx.stroke();
+            }
+            for (let y = 0; y < H; y += 50) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(W, y);
+                ctx.stroke();
+            }
+
+            // Draw platforms
+            for (const plat of platforms) {
+                ctx.fillStyle = '#3d3d5c';
+                ctx.fillRect(plat.x, plat.y, plat.w, plat.h);
+                ctx.fillStyle = '#5c5c8a';
+                ctx.fillRect(plat.x, plat.y, plat.w, 5);
+            }
+
+            // Draw bridges
+            for (const bridge of bridges) {
+                if (bridge.active) {
+                    ctx.fillStyle = 'rgba(0, 255, 136, 0.8)';
+                    ctx.fillRect(bridge.x, bridge.y, bridge.w, bridge.h);
+                    ctx.fillStyle = 'rgba(0, 255, 136, 1)';
+                    ctx.fillRect(bridge.x, bridge.y, bridge.w, 4);
+                } else {
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+                    ctx.setLineDash([5, 5]);
+                    ctx.strokeRect(bridge.x, bridge.y, bridge.w, bridge.h);
+                    ctx.setLineDash([]);
+                }
+            }
+
+            // Draw buttons
+            for (const btn of buttons) {
+                ctx.fillStyle = btn.pressed ? '#00ff88' : btn.color;
+                ctx.fillRect(btn.x, btn.y, btn.w, btn.h);
+                if (btn.hold) {
+                    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                    ctx.font = '10px Nunito';
+                    ctx.fillText('HOLD', btn.x + 5, btn.y + 11);
+                }
+            }
+
+            // Draw spikes
+            for (const spike of spikes) {
+                ctx.fillStyle = '#ff4444';
+                ctx.beginPath();
+                // Draw triangular spikes
+                const spikeCount = Math.floor(spike.w / 15);
+                const spikeWidth = spike.w / spikeCount;
+                for (let i = 0; i < spikeCount; i++) {
+                    const sx = spike.x + i * spikeWidth;
+                    ctx.moveTo(sx, spike.y);
+                    ctx.lineTo(sx + spikeWidth / 2, spike.y - spike.h);
+                    ctx.lineTo(sx + spikeWidth, spike.y);
+                }
+                ctx.closePath();
+                ctx.fill();
+                // Darker edge for depth
+                ctx.fillStyle = '#cc2222';
+                ctx.beginPath();
+                for (let i = 0; i < spikeCount; i++) {
+                    const sx = spike.x + i * spikeWidth;
+                    ctx.moveTo(sx, spike.y);
+                    ctx.lineTo(sx + spikeWidth / 2, spike.y - spike.h);
+                    ctx.lineTo(sx + spikeWidth / 4, spike.y - spike.h / 2);
+                }
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            // Draw portal
+            const portalGlow = Math.sin(Date.now() / 200) * 0.3 + 0.7;
+            ctx.fillStyle = `rgba(180, 100, 255, ${portalGlow * 0.3})`;
+            ctx.beginPath();
+            ctx.ellipse(portal.x + portal.w/2, portal.y + portal.h/2, portal.w, portal.h, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#b464ff';
+            ctx.fillRect(portal.x, portal.y, portal.w, portal.h);
+            ctx.fillStyle = '#d4a0ff';
+            ctx.fillRect(portal.x + 5, portal.y + 5, portal.w - 10, portal.h - 10);
+
+            // Swirl effect in portal
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(portal.x + 5, portal.y + 5, portal.w - 10, portal.h - 10);
+            ctx.clip();
+            const time = Date.now() / 500;
+            for (let i = 0; i < 3; i++) {
+                ctx.strokeStyle = `rgba(255, 255, 255, ${0.3 - i * 0.1})`;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(portal.x + portal.w/2, portal.y + portal.h/2, 10 + i * 8 + (time % 1) * 8, time + i, time + i + 4);
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            // Portal label
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 11px Nunito';
+            ctx.textAlign = 'center';
+            ctx.fillText('EXIT', portal.x + portal.w/2, portal.y - 8);
+            ctx.textAlign = 'left';
+
+            // Draw players
+            drawPlayer(player1);
+            drawPlayer(player2);
+
+            // Draw "at portal" indicators
+            if (player1.atPortal) {
+                ctx.fillStyle = player1.color;
+                ctx.font = 'bold 14px Nunito';
+                ctx.textAlign = 'center';
+                ctx.fillText('READY!', player1.x + PLAYER_W/2, player1.y - 10);
+            }
+            if (player2.atPortal) {
+                ctx.fillStyle = player2.color;
+                ctx.font = 'bold 14px Nunito';
+                ctx.textAlign = 'center';
+                ctx.fillText('READY!', player2.x + PLAYER_W/2, player2.y - 10);
+            }
+            ctx.textAlign = 'left';
+
+            // Draw level hint
+            const level = levels[currentLevel - 1];
+            if (level.hint) {
+                ctx.fillStyle = 'rgba(255,255,255,0.6)';
+                ctx.font = '14px Nunito';
+                ctx.textAlign = 'center';
+                ctx.fillText(level.hint, W/2, 30);
+                ctx.textAlign = 'left';
+            }
+        }
+
+        function drawPlayer(player) {
+            // Body
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x, player.y, PLAYER_W, PLAYER_H);
+
+            // Darker edge
+            ctx.fillStyle = player.eyeColor;
+            ctx.fillRect(player.x, player.y, 4, PLAYER_H);
+
+            // Eyes
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(player.x + 10, player.y + 12, 8, 8);
+            ctx.fillRect(player.x + 22, player.y + 12, 8, 8);
+
+            // Pupils
+            ctx.fillStyle = '#000';
+            const pupilOffset = player.vx > 0 ? 2 : (player.vx < 0 ? -2 : 0);
+            ctx.fillRect(player.x + 13 + pupilOffset, player.y + 15, 4, 4);
+            ctx.fillRect(player.x + 25 + pupilOffset, player.y + 15, 4, 4);
+
+            // Player number
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.font = 'bold 16px Nunito';
+            ctx.fillText('P' + player.num, player.x + 7, player.y + 38);
+        }
+
+        // ============= GAME LOOP =============
+        function gameLoop() {
+            if (!gameStarted) return;
+
+            updatePlayer(getMyPlayer(), true);
+            draw();
+
+            requestAnimationFrame(gameLoop);
+        }
+    </script>
+</body>
+</html>
