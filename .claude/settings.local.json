@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git restore:*)",
+      "Bash(powershell -Command \"Get-Package -Name ''*Nextcloud*'' | Uninstall-Package -Force\")",
+      "Bash(powershell -Command \"Get-WmiObject -Class Win32_Product | Where-Object { $_.Name -like ''*Nextcloud*'' } | ForEach-Object { $_.Uninstall\\(\\) }\")",
+      "Bash(powershell -Command \"& ''C:\\\\Program Files\\\\Nextcloud\\\\Uninstall.exe'' /S\")",
+      "Bash(powershell -Command \"$app = Get-WmiObject -Class Win32_Product | Where-Object { $_.Name -like ''*Nextcloud*'' }; if \\($app\\) { $app.Uninstall\\(\\) }\")",
+      "Bash(powershell:*)",
+      "WebFetch(domain:medium.com)",
+      "WebFetch(domain:recompilermag.com)"
+    ]
+  }
+}
