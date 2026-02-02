@@ -8,7 +8,9 @@
       "Bash(powershell -Command \"$app = Get-WmiObject -Class Win32_Product | Where-Object { $_.Name -like ''*Nextcloud*'' }; if \\($app\\) { $app.Uninstall\\(\\) }\")",
       "Bash(powershell:*)",
       "WebFetch(domain:medium.com)",
-      "WebFetch(domain:recompilermag.com)"
+      "WebFetch(domain:recompilermag.com)",
+      "Bash(git config:*)",
+      "WebFetch(domain:freesound.org)"
     ]
   }
 }
